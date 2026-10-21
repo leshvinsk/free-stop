@@ -26,20 +26,52 @@ jobs:
 
           if [ "$BASE" = "main" ]; then
             if [ "$HEAD" != "dev" ] || [ "$SAME_REPO" != "true" ]; then
-              echo "::error::Pull requests must target dev. Only dev is merged into main, and only by a maintainer."
+              echo "::error::Pull requests must target dev. Only dev is released to main, by the release workflow."
               fail=1
             fi
-          elif [ "$BASE" = "dev" ]; then
+            # The release pull request is opened by the workflow and its title is fixed
+            exit "$fail"
+          fi
+
+          if [ "$BASE" = "dev" ]; then
             if ! printf '%s' "$HEAD" | grep -Eq "^(($types)/[0-9]+-[a-z0-9][a-z0-9-]*|dependabot/.+|bot/.+)$"; then
               echo "::error::Branch '$HEAD' must be named <type>/<issue-number>-<short-description>, for example feat/42-tyre-compound-timeline."
               fail=1
             fi
           fi
 
-          if ! printf '%s' "$TITLE" | grep -Eq "^($types|release)(\([a-z0-9./-]+\))?!?: .+"; then
+          if ! printf '%s' "$TITLE" | grep -Eq "^($types)(\([a-z0-9./-]+\))?!?: .+"; then
             echo "::error::The title must follow Conventional Commits, for example 'feat: show tyre compound on the race timeline'."
             fail=1
           fi
 
           [ "$fail" -eq 0 ] && echo "Branch, target and title follow the contribution policy."
+          exit "$fail"
+
+      - name: Check out the pull request branch
+        if: github.base_ref == 'dev'
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check the branch is rebased on the latest dev
+        if: github.base_ref == 'dev'
+        run: |
+          git fetch --no-tags --quiet origin dev
+          fail=0
+
+          if ! git merge-base --is-ancestor origin/dev HEAD; then
+            echo "::error::This branch is behind dev. Run 'sh .github/scripts/sync-with-dev.sh', then 'git push --force-with-lease'."
+            fail=1
+          fi
+
+          merges=$(git rev-list --merges origin/dev..HEAD | wc -l)
+          if [ "$merges" -gt 0 ]; then
+            echo "::error::This branch contains $merges merge commit(s). Rebase onto dev instead of merging, using 'sh .github/scripts/sync-with-dev.sh'."
+            fail=1
+          fi
+
+          [ "$fail" -eq 0 ] && echo "The branch is rebased on the latest dev and has no merge commits."
           exit "$fail"

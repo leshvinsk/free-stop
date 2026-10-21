@@ -24,9 +24,10 @@ updates:
     commit-message:
       prefix: chore
       include: scope
+    # One pull request for all frontend updates, so they never conflict in package-lock.json
     groups:
-      npm-minor-and-patch:
-        update-types: [minor, patch]
+      frontend:
+        patterns: ["*"]
 
   - package-ecosystem: github-actions
     directory: /

@@ -157,6 +157,8 @@ free-stop/
 │   ├── ISSUE_TEMPLATE/              # Bug report, data correction and feature request forms
 │   ├── DISCUSSION_TEMPLATE/         # Ideas form
 │   ├── rulesets/                    # Branch and tag protection definitions
+│   ├── scripts/
+│   │   └── sync-with-dev.sh         # Stash, fetch, rebase onto dev, stash pop
 │   ├── CODEOWNERS
 │   ├── dependabot.yml
 │   └── pull_request_template.md
@@ -340,7 +342,7 @@ When the Blueprint is created in Render, its path must be set to `applications/r
 | Workflow | Trigger | Purpose |
 |---|---|---|
 | CI | Every pull request, and pushes to `dev` and `main` | Runs all backend and frontend checks |
-| PR policy | Every pull request | Verifies the target branch, branch name and title format |
+| PR policy | Every pull request | Verifies the target branch, branch name, title format, and that the branch is rebased on the latest `dev` |
 | Release to main | Every change to `dev` | Opens the release pull request from `dev` to `main` and merges it automatically once checks pass |
 | Sync team data | Daily at 06:00 UTC, and hourly from Thursday to Sunday | Opens a pull request when formula1.com team data changes |
 | Keep warm | Every 10 minutes | Prevents the hosted API from idling |

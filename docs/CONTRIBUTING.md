@@ -15,7 +15,7 @@ All participants are expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md
 - [Commit and Pull Request Titles](#commit-and-pull-request-titles)
 - [Pull Request Requirements](#pull-request-requirements)
 - [Review Process](#review-process)
-- [Keeping Your Fork Up to Date](#keeping-your-fork-up-to-date)
+- [Keeping Your Branch Up to Date](#keeping-your-branch-up-to-date)
 - [Development Environment](#development-environment)
 - [Coding Standards](#coding-standards)
 - [Testing Requirements](#testing-requirements)
@@ -26,7 +26,7 @@ All participants are expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md
 
 ## Overview
 
-Free Stop follows an issue driven workflow. Every change, however small, begins with an issue, is developed on a dedicated branch, and is merged through a reviewed pull request into the `dev` branch. Reviewed changes on `dev` are released to `main`, and therefore to production, by a maintainer.
+Free Stop follows an issue driven workflow. Every change, however small, begins with an issue, is developed on a dedicated branch, and is merged through a reviewed pull request into the `dev` branch. Once a maintainer approves and merges a pull request into `dev`, the change is released to `main`, and therefore to production, automatically.
 
 ## Ways to Contribute
 
@@ -102,32 +102,76 @@ git fetch upstream
 git checkout -b feat/42-tyre-compound-timeline upstream/dev
 ```
 
-Use one branch for one issue. Do not combine unrelated changes.
+Use one branch for one issue. Do not combine unrelated changes, and never work directly on `dev` or `main`.
 
-### Step 5: Make and commit your changes
+### Step 5: Make your changes
 
-Commit in small, logical steps using the [title convention](#commit-and-pull-request-titles):
+Make your changes on the issue branch. Do not commit yet.
+
+### Step 6: Bring your branch up to date with dev
+
+Before every commit, update your branch with the latest `dev` so that your work is built on the current code. Other contributors' changes may have been merged since you started.
+
+Run the sync script from the root of the repository:
+
+```bash
+sh .github/scripts/sync-with-dev.sh
+```
+
+The script performs the following steps in order and stops safely if any of them needs your attention:
+
+| Order | Action | Equivalent command |
+|---|---|---|
+| 1 | Saves your uncommitted work, including new files | `git stash push --include-untracked` |
+| 2 | Downloads the latest `dev` | `git fetch upstream dev` |
+| 3 | Replays your branch on top of the latest `dev` | `git rebase upstream/dev` |
+| 4 | Restores your uncommitted work | `git stash pop` |
+
+If the rebase reports a conflict, resolve the conflicted files, run `git add <file>` followed by `git rebase --continue`, and then run `git stash pop` to restore your work.
+
+On Windows, run the script from Git Bash, which is installed with Git for Windows.
+
+### Step 7: Run all checks locally
+
+Run the full set of [quality checks](README.md#quality-checks) before committing. Pull requests with failing checks are not reviewed.
+
+### Step 8: Stage and commit
+
+Stage only the files that belong to the change, then commit using the [title convention](#commit-and-pull-request-titles):
 
 ```bash
 git add <files>
 git commit -m "feat: show tyre compound on the race timeline"
 ```
 
-### Step 6: Run all checks locally
-
-Run the full set of [quality checks](README.md#quality-checks) before pushing. Pull requests with failing checks are not reviewed.
-
-### Step 7: Push and open a pull request
+### Step 9: Push the branch
 
 ```bash
-git push origin feat/42-tyre-compound-timeline
+git push --force-with-lease origin feat/42-tyre-compound-timeline
 ```
+
+`--force-with-lease` is required whenever the branch has been rebased after an earlier push. It updates your branch safely and refuses to overwrite any commits you have not seen.
+
+### Step 10: Open a pull request
 
 Open a pull request from your branch into `leshvinsk/free-stop:dev`. Complete every section of the pull request template, and include `Closes #42` so that the issue closes automatically when the change is merged.
 
-### Step 8: Respond to review
+### Step 11: Respond to review
 
-Address review comments by pushing further commits to the same branch. Resolve each conversation once it has been addressed. When the pull request is approved, a maintainer squash merges it into `dev`.
+Address review comments on the same branch. Before each new commit, repeat steps 6 to 9 so that the branch stays rebased on the latest `dev`. Resolve each conversation once it has been addressed. When the pull request is approved, a maintainer squash merges it into `dev`.
+
+### Workflow Summary
+
+```bash
+git checkout -b feat/42-tyre-compound-timeline upstream/dev   # once per issue
+# make your changes
+sh .github/scripts/sync-with-dev.sh                           # stash, fetch, rebase, stash pop
+# run the quality checks
+git add <files>
+git commit -m "feat: show tyre compound on the race timeline"
+git push --force-with-lease origin feat/42-tyre-compound-timeline
+# open a pull request into dev
+```
 
 ## Branch Naming Convention
 
@@ -172,6 +216,8 @@ A pull request can be merged only when every requirement below is met.
 | Targets the `dev` branch | PR policy check |
 | Branch follows the naming convention | PR policy check |
 | Title follows Conventional Commits | PR policy check |
+| Branch is rebased on the latest `dev` | PR policy check |
+| Branch contains no merge commits | PR policy check |
 | Backend checks pass | CI |
 | Frontend checks pass | CI |
 | Branch is up to date with `dev` | Branch ruleset |
@@ -190,15 +236,18 @@ Maintainers aim to provide a first review within five working days. Reviews asse
 
 Requested changes are a normal part of review and should not be read as a rejection. Pull requests that receive no response from their author for 30 days may be closed, and can be reopened at any time.
 
-## Keeping Your Fork Up to Date
+## Keeping Your Branch Up to Date
 
-Bring your branch up to date with `dev` before opening a pull request and whenever it falls behind:
+Free Stop accepts rebased branches only. The PR policy check fails if a branch is behind `dev` or contains merge commits, so never use `git merge` or `git pull` without `--rebase` to update an issue branch.
+
+Use the sync script whenever `dev` has moved on, including while a pull request is under review:
 
 ```bash
-git fetch upstream
-git rebase upstream/dev
+sh .github/scripts/sync-with-dev.sh
 git push --force-with-lease origin <your-branch>
 ```
+
+If a maintainer asks you to update a pull request through the GitHub interface, choose **Update with rebase**, not **Update with merge commit**.
 
 ## Development Environment
 
