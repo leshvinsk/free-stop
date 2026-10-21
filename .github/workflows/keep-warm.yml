@@ -1,0 +1,13 @@
+name: Keep warm
+
+on:
+  schedule:
+    - cron: '*/10 * * * *'  # every 10 minutes — keeps Render from spinning down after 15 min idle
+
+jobs:
+  ping:
+    name: Ping API
+    runs-on: ubuntu-latest
+    steps:
+      - name: Health check
+        run: curl -sf --max-time 30 https://free-stop-api.onrender.com/health
