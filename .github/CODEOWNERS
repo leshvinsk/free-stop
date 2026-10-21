@@ -1,2 +1,2 @@
-# Default owner — all PRs require review from @leshvinsk
+# Every pull request into dev and main requires approval from a code owner
 * @leshvinsk

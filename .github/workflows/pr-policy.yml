@@ -1,0 +1,45 @@
+name: PR policy
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  contents: read
+
+jobs:
+  policy:
+    name: PR policy
+    runs-on: ubuntu-latest
+    steps:
+      # Values are passed through env, never interpolated into the script, so a crafted
+      # title or branch name cannot inject shell commands
+      - name: Check target branch, branch name and title
+        env:
+          BASE: ${{ github.base_ref }}
+          HEAD: ${{ github.head_ref }}
+          TITLE: ${{ github.event.pull_request.title }}
+          SAME_REPO: ${{ github.event.pull_request.head.repo.full_name == github.repository }}
+        run: |
+          fail=0
+          types='feat|fix|docs|refactor|perf|test|build|ci|chore|data|style|revert'
+
+          if [ "$BASE" = "main" ]; then
+            if [ "$HEAD" != "dev" ] || [ "$SAME_REPO" != "true" ]; then
+              echo "::error::Pull requests must target dev. Only dev is merged into main, and only by a maintainer."
+              fail=1
+            fi
+          elif [ "$BASE" = "dev" ]; then
+            if ! printf '%s' "$HEAD" | grep -Eq "^(($types)/[0-9]+-[a-z0-9][a-z0-9-]*|dependabot/.+|bot/.+)$"; then
+              echo "::error::Branch '$HEAD' must be named <type>/<issue-number>-<short-description>, for example feat/42-tyre-compound-timeline."
+              fail=1
+            fi
+          fi
+
+          if ! printf '%s' "$TITLE" | grep -Eq "^($types|release)(\([a-z0-9./-]+\))?!?: .+"; then
+            echo "::error::The title must follow Conventional Commits, for example 'feat: show tyre compound on the race timeline'."
+            fail=1
+          fi
+
+          [ "$fail" -eq 0 ] && echo "Branch, target and title follow the contribution policy."
+          exit "$fail"

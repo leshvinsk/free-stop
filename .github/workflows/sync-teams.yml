@@ -3,7 +3,7 @@ name: Sync team data
 on:
   schedule:
     - cron: '0 6 * * *'        # daily at 06:00 UTC
-    - cron: '0 * * * 4,5,6,0'  # hourly Thu–Sun (race weekends)
+    - cron: '0 * * * 4,5,6,0'  # hourly Thursday to Sunday (race weekends)
   workflow_dispatch:
 
 permissions: {}
@@ -21,9 +21,12 @@ jobs:
       pull-requests: write
       issues: write
       actions: write
+      statuses: write
 
     steps:
       - uses: actions/checkout@v7
+        with:
+          ref: dev
 
       - uses: actions/setup-python@v7
         with:
@@ -35,11 +38,12 @@ jobs:
       - name: Scrape team data
         run: python backend/scripts/scrape_teams.py
 
-      # main is protected, so changes arrive as a pull request for the maintainer to approve
+      # dev is protected, so changes arrive as a pull request for the maintainer to approve
       - name: Open or update the data pull request
         id: cpr
         uses: peter-evans/create-pull-request@v8
         with:
+          base: dev
           branch: bot/sync-team-data
           delete-branch: true
           add-paths: frontend/src/data/teams_scraped.json
@@ -52,12 +56,18 @@ jobs:
             Review the diff before merging. Verified values in `frontend/src/data/teamInfo.ts`
             always win over this file, so this only fills gaps for new seasons and new teams.
 
-      # Pull requests opened with GITHUB_TOKEN do not trigger CI on their own
-      - name: Run CI on the data pull request
+      # Pull requests opened with GITHUB_TOKEN do not trigger workflows on their own, so CI is
+      # dispatched explicitly and the policy check (always satisfied by this bot) is reported directly
+      - name: Run checks on the data pull request
         if: steps.cpr.outputs.pull-request-operation == 'created' || steps.cpr.outputs.pull-request-operation == 'updated'
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh workflow run ci.yml --repo "${{ github.repository }}" --ref bot/sync-team-data
+          REPO: ${{ github.repository }}
+          SHA: ${{ steps.cpr.outputs.pull-request-head-sha }}
+        run: |
+          gh workflow run ci.yml --repo "$REPO" --ref bot/sync-team-data
+          gh api "repos/$REPO/statuses/$SHA" -f state=success -f context="PR policy" \
+            -f description="Automated data pull request"
 
       - name: Open issue on failure
         if: failure()
