@@ -1,18 +1,42 @@
-## What does this PR do?
+## Summary
 
-<!-- One paragraph summary of the change. -->
+<!-- Describe the change in one or two paragraphs. -->
 
-## Why?
+## Linked Issue
 
-<!-- What problem does it solve or what improvement does it make? -->
+Closes #<!-- issue number -->
 
-## How to test
+## Type of Change
 
-<!-- Steps to verify this works. Include the season/race if relevant. -->
+- [ ] New feature (`feat`)
+- [ ] Defect fix (`fix`)
+- [ ] Data correction (`data`)
+- [ ] Documentation (`docs`)
+- [ ] Refactoring with no change in behaviour (`refactor`)
+- [ ] Performance improvement (`perf`)
+- [ ] Tests only (`test`)
+- [ ] Build, workflow or maintenance (`build`, `ci`, `chore`)
+
+## Description of Changes
+
+<!-- List the main changes and the reasoning behind them. -->
+
+## Testing
+
+<!-- Describe how the change was verified. Include the season, race, driver or team used where relevant. -->
+
+## Screenshots
+
+<!-- For interface changes, include before and after screenshots. Remove this section if not applicable. -->
 
 ## Checklist
 
-- [ ] Backend: `ruff check .`, `ruff format --check .`, `mypy .`, `pytest -v` all pass
-- [ ] Frontend: `npm run type-check`, `npm run lint`, `npm test`, `npx vite build` all pass
-- [ ] No hardcoded secrets or personal data
-- [ ] Scoring logic changes are covered by a test in `backend/tests/`
+- [ ] This pull request targets the `dev` branch
+- [ ] The branch is named `<type>/<issue-number>-<short-description>`
+- [ ] The title follows Conventional Commits, for example `feat: show tyre compound on the race timeline`
+- [ ] Backend checks pass locally: `ruff check .`, `ruff format --check .`, `mypy .`, `pytest -v`
+- [ ] Frontend checks pass locally: `npm run type-check`, `npm run lint`, `npm run format -- --check`, `npm test`, `npx vite build`
+- [ ] Tests were added or updated for any change to behaviour or scoring
+- [ ] Documentation was updated where needed
+- [ ] Data corrections cite an official source
+- [ ] No credentials, personal data or generated files are included

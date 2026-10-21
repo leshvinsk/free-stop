@@ -2,7 +2,7 @@ name: Keep warm
 
 on:
   schedule:
-    - cron: '*/10 * * * *'  # every 10 minutes — keeps Render from spinning down after 15 min idle
+    - cron: '*/10 * * * *'  # every 10 minutes, so Render never reaches its 15 minute idle limit
 
 permissions: {}
 

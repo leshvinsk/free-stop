@@ -1,0 +1,53 @@
+name: Release to main
+
+on:
+  push:
+    branches: [dev]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: release-to-main
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Promote dev to main
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      # Every change on dev was already approved in its own pull request, so the release
+      # pull request merges itself as soon as the checks on dev pass
+      - name: Open the release pull request and enable auto-merge
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          ahead=$(gh api "repos/$REPO/compare/main...dev" --jq '.ahead_by')
+          if [ "$ahead" = "0" ]; then
+            echo "dev has no changes waiting for main."
+            exit 0
+          fi
+
+          changes=$(gh api "repos/$REPO/compare/main...dev" \
+            --jq '.commits[] | select(.parents | length == 1) | "- " + (.commit.message | split("\n")[0])')
+
+          body=$(printf '%s\n\n%s\n\n%s\n' \
+            "Automated release of the approved changes below from \`dev\` to \`main\`. This pull request merges itself once the checks pass, and the merge deploys the changes to production." \
+            "## Included changes" \
+            "$changes")
+
+          number=$(gh pr list --repo "$REPO" --base main --head dev --state open --json number --jq '.[0].number // empty')
+          if [ -n "$number" ]; then
+            gh pr edit "$number" --repo "$REPO" --body "$body"
+          else
+            gh pr create --repo "$REPO" --base main --head dev \
+              --title "release: merge dev into main" --body "$body"
+            number=$(gh pr list --repo "$REPO" --base main --head dev --state open --json number --jq '.[0].number')
+          fi
+
+          gh pr merge "$number" --repo "$REPO" --auto --merge
+          echo "Release pull request #$number will merge automatically when the checks pass."

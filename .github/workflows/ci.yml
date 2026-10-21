@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
   push:
-    branches: [main]
+    branches: [main, dev]
   workflow_dispatch:
 
 # Read-only token: fork pull requests can never write to the repo
@@ -16,24 +16,19 @@ concurrency:
 
 jobs:
   backend-ci:
-    name: Backend — lint, type-check, test
+    name: Backend checks
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
-
-      - name: Cache pip
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/pip
-          key: pip-${{ hashFiles('backend/pyproject.toml') }}
+          cache-dependency-path: backend/pyproject.toml
 
       - run: pip install -e ".[dev]"
 
@@ -50,15 +45,15 @@ jobs:
         run: pytest -v
 
   frontend-ci:
-    name: Frontend — lint, type-check, test
+    name: Frontend checks
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: npm
