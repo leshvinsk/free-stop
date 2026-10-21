@@ -19,8 +19,9 @@ frontend/.vite/
 .idea/
 *.swp
 
-# Claude Code: personal settings stay local, shared project settings are committed
-.claude/settings.local.json
+# Claude Code: keep out of repo entirely
+.claude/
+PRD Documentation/
 
 # OS
 .DS_Store
