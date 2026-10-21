@@ -77,7 +77,7 @@ Maintainers follow these guidelines in determining the consequences of any actio
 
 ## Appeals
 
-A person who is subject to an enforcement decision may appeal it once by writing to **leshvinsk@icloud.com** within 30 days of the decision. The appeal is reviewed and a final decision is communicated in writing.
+A person who is subject to an enforcement decision may appeal it once by writing to **leshvinsk@gmail.com** within 30 days of the decision. The appeal is reviewed and a final decision is communicated in writing.
 
 ## Attribution
 
