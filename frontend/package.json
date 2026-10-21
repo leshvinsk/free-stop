@@ -13,7 +13,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "echarts": "^5.5.1",
+    "echarts": "^6.1.0",
     "vue": "^3.5.0",
     "vue-echarts": "^7.0.3",
     "vue-router": "^4.4.0"
