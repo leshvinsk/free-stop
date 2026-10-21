@@ -134,8 +134,7 @@ def _scrape_team(client: httpx.Client, key: str, slug: str) -> dict[str, str] | 
     return data
 
 
-def scrape(out_path: Path) -> int:
-    """Scrape all teams and write JSON. Returns the number of teams successfully scraped."""
+def scrape() -> dict[str, dict[str, str]]:
     print("Scraping formula1.com team pages…")
     results: dict[str, dict[str, str]] = {}
 
@@ -148,30 +147,32 @@ def scrape(out_path: Path) -> int:
             if data:
                 results[key] = data
 
-    output = {
-        "year": date.today().year,
-        "scraped_at": datetime.now(UTC).isoformat(),
-        "teams": results,
-    }
-
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(output, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"\nScraped {len(results)}/{len(F1_SLUGS)} teams → {out_path}")
-    return len(results)
+    print(f"\nScraped {len(results)}/{len(F1_SLUGS)} teams")
+    return results
 
 
 def main() -> None:
     repo_root = Path(__file__).resolve().parent.parent.parent
     out_path = repo_root / "frontend" / "src" / "data" / "teams_scraped.json"
 
-    count = scrape(out_path)
+    teams = scrape()
 
-    # Cadillac may not appear yet; require at least 8 of 11
-    if count < 8:
-        print(f"ERROR: Only {count} teams scraped, expected ≥8", file=sys.stderr)
+    # Cadillac may not appear yet; require at least 8 of 11. Partial data is never written.
+    if len(teams) < 8:
+        print(f"ERROR: Only {len(teams)} teams scraped, expected ≥8", file=sys.stderr)
         sys.exit(1)
 
-    print("Done ✓")
+    year = date.today().year
+    if out_path.exists():
+        previous = json.loads(out_path.read_text(encoding="utf-8"))
+        # The timestamp alone must not produce a change, or every run would open a PR
+        if previous.get("year") == year and previous.get("teams") == teams:
+            print("No changes ✓")
+            return
+
+    output = {"year": year, "scraped_at": datetime.now(UTC).isoformat(), "teams": teams}
+    out_path.write_text(json.dumps(output, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    print(f"Updated {out_path} ✓")
 
 
 if __name__ == "__main__":

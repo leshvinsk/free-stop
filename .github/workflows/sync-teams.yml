@@ -4,7 +4,13 @@ on:
   schedule:
     - cron: '0 6 * * *'        # daily at 06:00 UTC
     - cron: '0 * * * 4,5,6,0'  # hourly Thu–Sun (race weekends)
-  workflow_dispatch:            # allow manual trigger from GitHub UI
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: sync-teams
+  cancel-in-progress: false
 
 jobs:
   sync:
@@ -12,7 +18,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      pull-requests: write
       issues: write
+      actions: write
 
     steps:
       - uses: actions/checkout@v4
@@ -25,18 +33,31 @@ jobs:
         run: pip install "httpx>=0.27" "beautifulsoup4>=4.12" "lxml>=5.2"
 
       - name: Scrape team data
-        id: scrape
         run: python backend/scripts/scrape_teams.py
 
-      - name: Commit if data changed
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add frontend/src/data/teams_scraped.json
-          git diff --staged --quiet && echo "No changes." || (
-            git commit -m "data: sync team data $(date -u +%Y-%m-%d)" &&
-            git push
-          )
+      # main is protected, so changes arrive as a pull request for the maintainer to approve
+      - name: Open or update the data pull request
+        id: cpr
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: bot/sync-team-data
+          delete-branch: true
+          add-paths: frontend/src/data/teams_scraped.json
+          commit-message: "data: sync team data from formula1.com"
+          title: "data: sync team data from formula1.com"
+          labels: data
+          body: |
+            Automated update from the formula1.com team pages.
+
+            Review the diff before merging. Verified values in `frontend/src/data/teamInfo.ts`
+            always win over this file, so this only fills gaps for new seasons and new teams.
+
+      # Pull requests opened with GITHUB_TOKEN do not trigger CI on their own
+      - name: Run CI on the data pull request
+        if: steps.cpr.outputs.pull-request-operation == 'created' || steps.cpr.outputs.pull-request-operation == 'updated'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run ci.yml --repo "${{ github.repository }}" --ref bot/sync-team-data
 
       - name: Open issue on failure
         if: failure()
@@ -50,7 +71,7 @@ jobs:
               labels: 'data-alert',
               state: 'open',
             });
-            if (issues.some(i => i.title === title)) return; // deduplicate
+            if (issues.some(i => i.title === title)) return;
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,

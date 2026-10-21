@@ -1,0 +1,58 @@
+name: Data correction
+description: A team principal, chassis, photo, flag or other F1 fact is wrong
+title: "[Data] "
+labels: [data, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Free Stop only publishes verified data, so every correction needs an official source.
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What is wrong?
+      options:
+        - Team principal
+        - Chassis or power unit
+        - Team base or founding year
+        - Driver photo or suit
+        - Team logo or car image
+        - Nationality flag
+        - Pit stop or race result
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: season
+    attributes:
+      label: Season
+      options: ["2024", "2025", "2026"]
+    validations:
+      required: true
+  - type: input
+    id: subject
+    attributes:
+      label: Team, driver or race
+      placeholder: Aston Martin
+    validations:
+      required: true
+  - type: input
+    id: shown
+    attributes:
+      label: What the site shows
+    validations:
+      required: true
+  - type: input
+    id: correct
+    attributes:
+      label: What it should show
+    validations:
+      required: true
+  - type: input
+    id: source
+    attributes:
+      label: Official source
+      description: A link to formula1.com, fia.com or the team's own site.
+      placeholder: https://www.formula1.com/en/teams/...
+    validations:
+      required: true

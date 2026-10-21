@@ -19,6 +19,7 @@ A FastAPI + Vue 3 platform that scores F1 pit-stop timing luck across the 2024, 
 - [Automated Data](#automated-data)
 - [Data Sources](#data-sources)
 - [Operational Notes](#operational-notes)
+- [Contributing](#contributing)
 - [Project Status](#project-status)
 - [License](#license)
 
@@ -253,7 +254,7 @@ Two GitHub Actions workflows keep the site current without any manual work:
 
 **Sync team data** (`sync-teams.yml`)
 
-Runs daily at 06:00 UTC and hourly on Thursday through Sunday (race weekends). Scrapes all team pages on formula1.com and commits updated principals, chassis names and power units to `frontend/src/data/teams_scraped.json`. Your verified values in `teamInfo.ts` always take priority over the scraped data — the scraper only fills in gaps for new seasons or new teams.
+Runs daily at 06:00 UTC and hourly on Thursday through Sunday (race weekends). Scrapes all team pages on formula1.com and, when principals, chassis names or power units change, opens a pull request updating `frontend/src/data/teams_scraped.json`. Nothing reaches the live site until a maintainer approves that pull request. Verified values in `teamInfo.ts` always take priority over the scraped data — the scraper only fills in gaps for new seasons or new teams.
 
 If fewer than 8 of 11 teams are scraped successfully, the workflow opens a GitHub issue labelled `data-alert` so the failure does not go unnoticed.
 
@@ -275,8 +276,15 @@ Pings `https://free-stop-api.onrender.com/health` every 10 minutes. Render's fre
 - `REDIS_URL` is optional. The backend degrades gracefully to the disk cache if Redis is unavailable.
 - Scores for completed races are cached permanently. Only sessions within 24 hours of completion are re-scored on each request.
 - The disk cache is ephemeral on Render — it is cleared on every redeploy. Redis survives redeploys.
-- The `sync-teams.yml` workflow requires **Read and write permissions** enabled under repository Settings → Actions → Workflow permissions, otherwise the commit step will be rejected.
-- Keep the repository public to use unlimited GitHub Actions minutes. The keep-warm workflow alone triggers 144 runs per day.
+- `main` is protected by the ruleset in `.github/rulesets/protect-main.json`: pull request only, squash merge, green CI and code owner approval.
+- The `sync-teams.yml` workflow needs **Allow GitHub Actions to create and approve pull requests** enabled under Settings → Actions → General.
+- Dependabot opens grouped dependency updates every Monday.
+
+## Contributing
+
+Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) for the workflow and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for community standards. Questions and ideas go in [Discussions](https://github.com/leshvinsk/free-stop/discussions).
+
+To report a security vulnerability, follow [SECURITY.md](SECURITY.md). Please don't open a public issue.
 
 ## Project Status
 
@@ -284,4 +292,6 @@ Actively developed. The 2024 and 2025 seasons are fully scored. The 2026 season 
 
 ## License
 
-No license has been specified. Add a license before distributing or publishing this project publicly.
+The source code is released under the [MIT License](LICENSE).
+
+The license covers this project's code only. F1, FORMULA 1 and related marks, and the team logos, driver photos and car images loaded from the Formula 1 media CDN, belong to their respective owners. Free Stop is an unofficial fan project and is not associated with Formula 1 or the FIA.

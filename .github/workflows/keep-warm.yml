@@ -4,6 +4,8 @@ on:
   schedule:
     - cron: '*/10 * * * *'  # every 10 minutes — keeps Render from spinning down after 15 min idle
 
+permissions: {}
+
 jobs:
   ping:
     name: Ping API

@@ -1,0 +1,32 @@
+name: Feature request
+description: Suggest an improvement or a new analysis
+title: "[Feature] "
+labels: [enhancement, triage]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Early-stage ideas are better started in [Discussions](https://github.com/leshvinsk/free-stop/discussions/categories/ideas). Open a feature request once the idea is concrete.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: Describe the gap or friction on the site today.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      options:
+        - label: I would like to work on this myself
