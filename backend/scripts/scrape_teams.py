@@ -5,13 +5,14 @@ Outputs: frontend/src/data/teams_scraped.json
 Usage (from repo root):
     python backend/scripts/scrape_teams.py
 """
+
 from __future__ import annotations
 
 import json
 import re
 import sys
 import time
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 import httpx
@@ -117,7 +118,10 @@ def _scrape_team(client: httpx.Client, key: str, slug: str) -> dict[str, str] | 
 
     data = _bs_parse(r.text)
     if len(data) < 3:
-        print(f"  Primary parser weak for {key} ({len(data)} fields), trying regex", file=sys.stderr)
+        print(
+            f"  Primary parser weak for {key} ({len(data)} fields), trying regex fallback",
+            file=sys.stderr,
+        )
         fallback = _regex_parse(r.text)
         # Merge: primary fields + any extra from fallback
         data = {**fallback, **data}
@@ -146,7 +150,7 @@ def scrape(out_path: Path) -> int:
 
     output = {
         "year": date.today().year,
-        "scraped_at": datetime.now(timezone.utc).isoformat(),
+        "scraped_at": datetime.now(UTC).isoformat(),
         "teams": results,
     }
 
