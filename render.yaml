@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: free-stop-api
+    runtime: python
+    buildCommand: pip install -e .
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    rootDir: backend
+    plan: free
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.0
+      - key: LOG_LEVEL
+        value: INFO
+      # Contact for Wikimedia Commons (race photos), whose robot policy requires one
+      - key: WIKIMEDIA_CONTACT
+        value: leshvinsk@icloud.com
+
+  - type: web
+    name: free-stop-ui
+    runtime: static
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    rootDir: frontend
+    plan: free
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: public, max-age=300
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://free-stop-api.onrender.com

@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+dist/
+.env
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Claude Code: personal settings stay local, shared project settings are committed
+.claude/settings.local.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# OpenF1 responses and saved scores, rebuilt from OpenF1 on demand
+backend/.cache/

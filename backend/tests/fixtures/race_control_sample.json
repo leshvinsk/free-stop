@@ -1,0 +1,9 @@
+[
+  {"session_key": 9999, "lap_number": 1,  "category": "Flag",              "flag": "GREEN",   "message": "GREEN FLAG"},
+  {"session_key": 9999, "lap_number": 15, "category": "SafetyCar",         "flag": null,      "message": "SAFETY CAR DEPLOYED"},
+  {"session_key": 9999, "lap_number": 19, "category": "SafetyCar",         "flag": null,      "message": "SAFETY CAR IN THIS LAP"},
+  {"session_key": 9999, "lap_number": 20, "category": "Flag",              "flag": "GREEN",   "message": "GREEN FLAG"},
+  {"session_key": 9999, "lap_number": 35, "category": "VirtualSafetyCar", "flag": null,      "message": "VIRTUAL SAFETY CAR DEPLOYED"},
+  {"session_key": 9999, "lap_number": 37, "category": "VirtualSafetyCar", "flag": null,      "message": "VIRTUAL SAFETY CAR ENDING"},
+  {"session_key": 9999, "lap_number": 38, "category": "Flag",              "flag": "GREEN",   "message": "GREEN FLAG"}
+]
