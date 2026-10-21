@@ -34,6 +34,7 @@ Closes #<!-- issue number -->
 - [ ] This pull request targets the `dev` branch
 - [ ] The branch is named `<type>/<issue-number>-<short-description>`
 - [ ] The title follows Conventional Commits, for example `feat: show tyre compound on the race timeline`
+- [ ] The branch was rebased on the latest `dev` with `sh .github/scripts/sync-with-dev.sh` and contains no merge commits
 - [ ] Backend checks pass locally: `ruff check .`, `ruff format --check .`, `mypy .`, `pytest -v`
 - [ ] Frontend checks pass locally: `npm run type-check`, `npm run lint`, `npm run format -- --check`, `npm test`, `npx vite build`
 - [ ] Tests were added or updated for any change to behaviour or scoring

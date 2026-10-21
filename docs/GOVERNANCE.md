@@ -41,6 +41,7 @@ The current maintainer is [@leshvinsk](https://github.com/leshvinsk).
 Additional rules for both branches:
 
 - Direct pushes, force pushes and branch deletion are blocked.
+- Pull requests into `dev` must be rebased on the latest `dev` and must not contain merge commits.
 - Approvals are dismissed when new commits are pushed.
 - All review conversations must be resolved before merging.
 - Release tags matching `v*` may be created, moved or deleted by maintainers only.
