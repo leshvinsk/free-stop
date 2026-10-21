@@ -1,0 +1,83 @@
+{
+  "year": 2026,
+  "scraped_at": "2026-10-21T00:00:00+00:00",
+  "teams": {
+    "mercedes": {
+      "principal": "Toto Wolff",
+      "base": "Brackley, United Kingdom",
+      "chassis": "W17",
+      "power_unit": "Mercedes",
+      "founded": "2010"
+    },
+    "red-bull-racing": {
+      "principal": "Laurent Mekies",
+      "base": "Milton Keynes, United Kingdom",
+      "chassis": "RB22",
+      "power_unit": "Red Bull Ford",
+      "founded": "2005"
+    },
+    "ferrari": {
+      "principal": "Frédéric Vasseur",
+      "base": "Maranello, Italy",
+      "chassis": "SF-26",
+      "power_unit": "Ferrari",
+      "founded": "1929"
+    },
+    "mclaren": {
+      "principal": "Andrea Stella",
+      "base": "Woking, United Kingdom",
+      "chassis": "MCL40",
+      "power_unit": "Mercedes",
+      "founded": "1963"
+    },
+    "aston-martin": {
+      "principal": "Adrian Newey",
+      "base": "Silverstone, United Kingdom",
+      "chassis": "AMR26",
+      "power_unit": "Honda",
+      "founded": "2021"
+    },
+    "alpine": {
+      "principal": "Flavio Briatore",
+      "base": "Enstone, United Kingdom",
+      "chassis": "A526",
+      "power_unit": "Mercedes",
+      "founded": "2021"
+    },
+    "williams": {
+      "principal": "James Vowles",
+      "base": "Grove, United Kingdom",
+      "chassis": "FW48",
+      "power_unit": "Mercedes",
+      "founded": "1977"
+    },
+    "racing-bulls": {
+      "principal": "Alan Permane",
+      "base": "Faenza, Italy",
+      "chassis": "VCARB 03",
+      "power_unit": "Red Bull Ford",
+      "founded": "2006"
+    },
+    "haas": {
+      "principal": "Ayao Komatsu",
+      "base": "Kannapolis, United States",
+      "chassis": "VF-26",
+      "power_unit": "Ferrari",
+      "founded": "2014"
+    },
+    "audi": {
+      "principal": "Mattia Binotto",
+      "base": "Hinwil, Switzerland",
+      "chassis": "R26",
+      "power_unit": "Audi",
+      "founded": "1993"
+    },
+    "cadillac": {
+      "principal": "Marcin Budkowski",
+      "base": "Silverstone, United Kingdom",
+      "chassis": "MAC-26",
+      "power_unit": "Ferrari",
+      "founded": "2025"
+    }
+  }
+}

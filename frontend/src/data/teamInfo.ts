@@ -1,7 +1,9 @@
 /**
- * Static display data per team key. Hardcoded because none of this comes
- * from OpenF1. Car specs reflect the 2026 technical regulations.
+ * Team display data. Verified values (TEAM_INFO_VERIFIED) always override
+ * the daily-scraped fallback (teams_scraped.json). New seasons and new teams
+ * are populated automatically from the scraper until a verified entry is added.
  */
+import scrapedRaw from './teams_scraped.json'
 
 export interface CarHotspot {
   id: string
@@ -30,6 +32,16 @@ export interface TeamInfo {
   chassis: Record<number, string>
   powerUnit: Record<number, string>
 }
+
+interface ScrapedTeam {
+  principal?: string
+  base?: string
+  chassis?: string
+  power_unit?: string
+  founded?: string
+}
+
+const _scraped = scrapedRaw as { year: number; teams: Record<string, ScrapedTeam> }
 
 // ── Hotspot definitions (positions tuned to the F1 side-view car silhouette) ──
 
@@ -144,9 +156,9 @@ function hotspots(): CarHotspot[] {
   return HOTSPOTS_2026.map((h, i) => ({ ...h, id: `h${i}` }))
 }
 
-// ── Team-specific data ──────────────────────────────────────────────────────
+// ── Verified team data (always overrides scraped fallback) ──────────────────
 
-export const TEAM_INFO: Record<string, TeamInfo> = {
+const TEAM_INFO_VERIFIED: Record<string, TeamInfo> = {
   mercedes: {
     principal: { 2024: 'Toto Wolff', 2025: 'Toto Wolff', 2026: 'Toto Wolff' },
     base: 'Brackley, UK',
@@ -271,6 +283,44 @@ export const TEAM_INFO: Record<string, TeamInfo> = {
     powerUnit: { 2026: 'Ferrari 067/6' },
   },
 }
+
+// ── Merge verified + scraped (verified always wins) ─────────────────────────
+
+function _mergeTeam(key: string): TeamInfo | null {
+  const v = TEAM_INFO_VERIFIED[key]
+  const s = _scraped.teams[key]
+  if (!v && !s) return null
+  const y = _scraped.year
+  return {
+    principal: {
+      ...(s?.principal ? { [y]: s.principal } : {}),
+      ...(v?.principal ?? {}),
+    },
+    principalNote: v?.principalNote,
+    base: v?.base ?? s?.base ?? '—',
+    founded: v?.founded ?? s?.founded ?? '—',
+    chassis: {
+      ...(s?.chassis ? { [y]: s.chassis } : {}),
+      ...(v?.chassis ?? {}),
+    },
+    powerUnit: {
+      ...(s?.power_unit ? { [y]: s.power_unit } : {}),
+      ...(v?.powerUnit ?? {}),
+    },
+  }
+}
+
+function _buildTeamInfo(): Record<string, TeamInfo> {
+  const keys = new Set([...Object.keys(TEAM_INFO_VERIFIED), ...Object.keys(_scraped.teams)])
+  const result: Record<string, TeamInfo> = {}
+  for (const key of keys) {
+    const info = _mergeTeam(key)
+    if (info) result[key] = info
+  }
+  return result
+}
+
+export const TEAM_INFO: Record<string, TeamInfo> = _buildTeamInfo()
 
 export function getCarHotspots(): CarHotspot[] {
   return hotspots()
