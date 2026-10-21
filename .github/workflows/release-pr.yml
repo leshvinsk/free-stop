@@ -1,4 +1,4 @@
-name: Release PR
+name: Release to main
 
 on:
   push:
@@ -8,18 +8,20 @@ on:
 permissions: {}
 
 concurrency:
-  group: release-pr
+  group: release-to-main
   cancel-in-progress: false
 
 jobs:
-  release-pr:
-    name: Open or update the release pull request
+  release:
+    name: Promote dev to main
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       pull-requests: write
     steps:
-      - name: Open or update dev into main
+      # Every change on dev was already approved in its own pull request, so the release
+      # pull request merges itself as soon as the checks on dev pass
+      - name: Open the release pull request and enable auto-merge
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -33,17 +35,19 @@ jobs:
           changes=$(gh api "repos/$REPO/compare/main...dev" \
             --jq '.commits[] | select(.parents | length == 1) | "- " + (.commit.message | split("\n")[0])')
 
-          body=$(printf '%s\n\n%s\n\n%s\n\n%s\n' \
-            "This pull request releases the changes below from \`dev\` to \`main\`. Merging it deploys them to the live site." \
+          body=$(printf '%s\n\n%s\n\n%s\n' \
+            "Automated release of the approved changes below from \`dev\` to \`main\`. This pull request merges itself once the checks pass, and the merge deploys the changes to production." \
             "## Included changes" \
-            "$changes" \
-            "Merge with **Create a merge commit** so that \`dev\` and \`main\` keep a shared history.")
+            "$changes")
 
           number=$(gh pr list --repo "$REPO" --base main --head dev --state open --json number --jq '.[0].number // empty')
           if [ -n "$number" ]; then
             gh pr edit "$number" --repo "$REPO" --body "$body"
-            echo "Updated release pull request #$number."
           else
             gh pr create --repo "$REPO" --base main --head dev \
               --title "release: merge dev into main" --body "$body"
+            number=$(gh pr list --repo "$REPO" --base main --head dev --state open --json number --jq '.[0].number')
           fi
+
+          gh pr merge "$number" --repo "$REPO" --auto --merge
+          echo "Release pull request #$number will merge automatically when the checks pass."

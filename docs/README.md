@@ -151,7 +151,7 @@ free-stop/
 │   ├── workflows/
 │   │   ├── ci.yml                   # Backend and frontend checks
 │   │   ├── pr-policy.yml            # Target branch, branch name and title rules
-│   │   ├── release-pr.yml           # Maintains the dev to main release pull request
+│   │   ├── release-pr.yml           # Promotes approved changes from dev to main
 │   │   ├── sync-teams.yml           # Team data synchronisation from formula1.com
 │   │   └── keep-warm.yml            # Health check that prevents idle spin down
 │   ├── ISSUE_TEMPLATE/              # Bug report, data correction and feature request forms
@@ -316,12 +316,12 @@ feat/42-tyre-compound-timeline  (contributor branch on a fork)
    v
 dev
    |
-   |  release pull request, maintainer approval, merge commit
+   |  release pull request, merged automatically once checks pass
    v
 main  -->  deployed to production
 ```
 
-Every change starts as an issue, is developed on its own branch, and is reviewed in a pull request against `dev`. A release pull request from `dev` to `main` is opened and kept up to date automatically. A maintainer approves and merges it to publish the changes. The complete process is described in [CONTRIBUTING.md](CONTRIBUTING.md) and the approval rules in [GOVERNANCE.md](GOVERNANCE.md).
+Every change starts as an issue, is developed on its own branch, and is reviewed in a pull request against `dev`. Once a maintainer approves and merges a pull request into `dev`, a release pull request from `dev` to `main` is opened automatically and merges itself as soon as the checks pass, which deploys the change. The complete process is described in [CONTRIBUTING.md](CONTRIBUTING.md) and the approval rules in [GOVERNANCE.md](GOVERNANCE.md).
 
 ## Deployment
 
@@ -333,7 +333,7 @@ Every change starts as an issue, is developed on its own branch, and is reviewed
 | `free-stop-ui` | Static site | Vue 3 frontend |
 | `free-stop-redis` | Redis | Score cache |
 
-When the Blueprint is created in Render, its path must be set to `applications/render.yaml`. Both web services deploy from `main` only, so changes reach production when a release pull request is merged and at no other time.
+When the Blueprint is created in Render, its path must be set to `applications/render.yaml`. Both web services deploy from `main` only, so changes reach production only through an approved pull request into `dev` followed by the automated release.
 
 ## Automated Workflows
 
@@ -341,14 +341,14 @@ When the Blueprint is created in Render, its path must be set to `applications/r
 |---|---|---|
 | CI | Every pull request, and pushes to `dev` and `main` | Runs all backend and frontend checks |
 | PR policy | Every pull request | Verifies the target branch, branch name and title format |
-| Release PR | Every change to `dev` | Opens or updates the pull request from `dev` to `main` |
+| Release to main | Every change to `dev` | Opens the release pull request from `dev` to `main` and merges it automatically once checks pass |
 | Sync team data | Daily at 06:00 UTC, and hourly from Thursday to Sunday | Opens a pull request when formula1.com team data changes |
 | Keep warm | Every 10 minutes | Prevents the hosted API from idling |
 | Dependabot | Weekly on Monday | Opens grouped dependency updates against `dev` |
 
 ### Team Data Synchronisation
 
-The synchronisation workflow reads every team page on formula1.com and compares the result with `frontend/src/data/teams_scraped.json`. When the data has changed, it opens or updates a pull request against `dev`. Nothing reaches production until a maintainer approves that pull request and the next release is merged. Verified values in `frontend/src/data/teamInfo.ts` always take precedence over synchronised values.
+The synchronisation workflow reads every team page on formula1.com and compares the result with `frontend/src/data/teams_scraped.json`. When the data has changed, it opens or updates a pull request against `dev`. Nothing reaches production until a maintainer approves and merges that pull request. Verified values in `frontend/src/data/teamInfo.ts` always take precedence over synchronised values.
 
 If fewer than eight of the eleven teams can be read, no data is written and the workflow opens an issue labelled `data-alert` so that the failure is investigated promptly.
 

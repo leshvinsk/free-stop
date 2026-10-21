@@ -36,7 +36,7 @@ The current maintainer is [@leshvinsk](https://github.com/leshvinsk).
 | Target branch | Accepted source | Required checks | Required approvals | Merge method | Merged by |
 |---|---|---|---|---|---|
 | `dev` | Contributor branches named `<type>/<issue>-<description>` | Backend checks, Frontend checks, PR policy | One code owner approval | Squash merge | Maintainer |
-| `main` | `dev` only | Backend checks, Frontend checks | One code owner approval | Merge commit | Maintainer |
+| `main` | `dev` only | Backend checks, Frontend checks | None, as every change was approved on `dev` | Merge commit | Automated release workflow |
 
 Additional rules for both branches:
 
@@ -54,8 +54,8 @@ Significant decisions, such as changes to the scoring methodology, the addition 
 ## Release Management
 
 1. Approved pull requests are squash merged into `dev`.
-2. An automated workflow opens and maintains a release pull request from `dev` to `main`, listing every included change.
-3. The maintainer reviews the release pull request, confirms that all checks pass, and merges it with a merge commit.
+2. The release workflow opens a release pull request from `dev` to `main`, listing every included change, and enables auto-merge on it.
+3. Once the checks on `dev` pass, the release pull request merges itself with a merge commit. The maintainer may close or pause it at any time to hold a release.
 4. Merging into `main` deploys the release to production.
 5. The maintainer publishes release notes and a version tag on the [Releases](https://github.com/leshvinsk/free-stop/releases) page.
 

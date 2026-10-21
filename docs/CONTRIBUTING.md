@@ -53,7 +53,7 @@ Free Stop does not grant direct write access to contributors. All changes are su
 | Branch | Role | Accepts pull requests from | Merge method | Merged by |
 |---|---|---|---|---|
 | `dev` | Default and integration branch | Contributor branches | Squash merge | Maintainer |
-| `main` | Production branch | `dev` only | Merge commit | Maintainer |
+| `main` | Production branch | `dev` only | Merge commit | Automated release workflow |
 | `<type>/<issue>-<description>` | One branch per issue | Not applicable | Not applicable | Not applicable |
 
 ```text
@@ -66,7 +66,7 @@ feat/42-tyre-compound-timeline   created on your fork from dev
    v
 dev
    |
-   |  release pull request into main, maintainer approves, merge commit
+   |  release pull request into main, merged automatically once checks pass
    v
 main   deployed to production
 ```
@@ -241,7 +241,7 @@ Free Stop publishes verified data only. Every correction must cite an official s
 
 ## Release Process
 
-Contributors do not need to take any action to release a change. Once a pull request is merged into `dev`, it is included in the automatically maintained release pull request from `dev` to `main`. A maintainer reviews and merges that pull request, at which point the change is deployed to production. Release notes and version tags are published by the maintainers on the [Releases](https://github.com/leshvinsk/free-stop/releases) page.
+Contributors do not need to take any action to release a change. When a maintainer approves and merges a pull request into `dev`, the release workflow opens a release pull request from `dev` to `main` and enables auto-merge on it. As soon as the checks on `dev` pass, the release pull request merges itself and the change is deployed to production. No second approval is required, because every change on `dev` has already been reviewed and approved. Release notes and version tags are published by the maintainers on the [Releases](https://github.com/leshvinsk/free-stop/releases) page.
 
 ## Getting Help
 
