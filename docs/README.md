@@ -105,6 +105,20 @@ Execution is scored separately as the difference between the actual pit lane tim
 
 ```text
 free-stop/
+├── .github/
+│   ├── workflows/
+│   │   ├── ci.yml                 # Lint, type-check, test on every push
+│   │   ├── sync-teams.yml         # Team data scrape from formula1.com, opened as a PR
+│   │   └── keep-warm.yml          # Ping API every 10 min to prevent spin-down
+│   ├── ISSUE_TEMPLATE/            # Bug report, data correction, feature request forms
+│   ├── DISCUSSION_TEMPLATE/       # Ideas form
+│   ├── rulesets/                  # Branch and tag protection, imported in Settings
+│   ├── CODEOWNERS
+│   ├── dependabot.yml
+│   └── pull_request_template.md
+├── applications/
+│   ├── render.yaml                # Render Blueprint — API, UI and Redis as code
+│   └── .pre-commit-config.yaml    # Local ruff and Prettier hooks
 ├── backend/
 │   ├── main.py                    # FastAPI app entry point
 │   ├── pyproject.toml             # Dependencies, ruff, mypy, pytest config
@@ -130,13 +144,12 @@ free-stop/
 │   │   └── utils/                 # format, identity, stories
 │   ├── vite.config.ts             # API proxy for local dev
 │   └── package.json
-├── .github/
-│   └── workflows/
-│       ├── ci.yml                 # Lint, type-check, test on every push
-│       ├── sync-teams.yml         # Daily team data scrape from formula1.com
-│       └── keep-warm.yml          # Ping API every 10 min to prevent spin-down
-├── render.yaml                    # Render IaC — API, UI and Redis as code
-└── .pre-commit-config.yaml
+├── docs/
+│   ├── README.md
+│   ├── CONTRIBUTING.md
+│   ├── CODE_OF_CONDUCT.md
+│   └── SECURITY.md
+└── LICENSE
 ```
 
 ## Getting Started
@@ -236,9 +249,16 @@ npx vite build
 
 All checks run automatically on every push via GitHub Actions.
 
+To run the same formatters automatically before each commit, install the optional pre-commit hooks:
+
+```bash
+pip install pre-commit
+pre-commit install --config applications/.pre-commit-config.yaml
+```
+
 ## Deployment
 
-The repository includes a `render.yaml` that defines all three Render services as code:
+`applications/render.yaml` is a Render Blueprint that defines all three services as code:
 
 | Service | Type | Purpose |
 |---|---|---|
@@ -246,7 +266,7 @@ The repository includes a `render.yaml` that defines all three Render services a
 | `free-stop-ui` | Static site | Vue 3 frontend |
 | `free-stop-redis` | Redis | Score cache |
 
-Connect the repository to Render once — every push to `main` triggers an automatic redeploy of both services. The Redis instance and its connection string are wired automatically via `render.yaml`.
+Create a Blueprint in Render from this repository and set the **Blueprint path** to `applications/render.yaml`. After that, every merge to `main` redeploys both services automatically. The Redis instance and its connection string are wired up by the Blueprint.
 
 ## Automated Data
 
@@ -292,6 +312,6 @@ Actively developed. The 2024 and 2025 seasons are fully scored. The 2026 season 
 
 ## License
 
-The source code is released under the [MIT License](LICENSE).
+The source code is released under the [MIT License](../LICENSE).
 
 The license covers this project's code only. F1, FORMULA 1 and related marks, and the team logos, driver photos and car images loaded from the Formula 1 media CDN, belong to their respective owners. Free Stop is an unofficial fan project and is not associated with Formula 1 or the FIA.
