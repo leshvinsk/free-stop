@@ -1,4 +1,9 @@
 services:
+  - type: redis
+    name: free-stop-redis
+    plan: free
+    maxmemoryPolicy: allkeys-lru
+
   - type: web
     name: free-stop-api
     runtime: python
@@ -14,6 +19,11 @@ services:
       # Contact for Wikimedia Commons (race photos), whose robot policy requires one
       - key: WIKIMEDIA_CONTACT
         value: leshvinsk@icloud.com
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: free-stop-redis
+          property: connectionString
 
   - type: web
     name: free-stop-ui
