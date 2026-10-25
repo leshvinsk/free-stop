@@ -1,6 +1,6 @@
 {
   "year": 2026,
-  "scraped_at": "2026-10-25T17:20:13.116507+00:00",
+  "scraped_at": "2026-10-25T18:04:24.377255+00:00",
   "teams": {
     "mercedes": {
       "base": "Brackley, United Kingdom",
@@ -50,6 +50,13 @@
       "chassis": "VCARB 03",
       "power_unit": "Red Bull Ford",
       "founded": "1985"
+    },
+    "haas": {
+      "base": "Kannapolis, United States",
+      "principal": "Ayao Komatsu",
+      "chassis": "VF-26",
+      "power_unit": "Ferrari",
+      "founded": "2016"
     },
     "audi": {
       "base": "Hinwil, Switzerland",
