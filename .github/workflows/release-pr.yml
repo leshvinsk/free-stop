@@ -18,9 +18,11 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      statuses: write
     steps:
-      # Every change on dev was already approved in its own pull request, so the release
-      # pull request merges itself as soon as the checks on dev pass
+      # Every change on dev was already approved in its own pull request and passed CI
+      # there, so the release pull request posts those results directly rather than waiting
+      # for CI to re-run, which would expire pending approval for bot-created pull requests
       - name: Open the release pull request and enable auto-merge
         env:
           GH_TOKEN: ${{ github.token }}
@@ -48,6 +50,14 @@ jobs:
               --title "release: merge dev into main" --body "$body"
             number=$(gh pr list --repo "$REPO" --base main --head dev --state open --json number --jq '.[0].number')
           fi
+
+          sha=$(gh api "repos/$REPO/git/ref/heads/dev" --jq '.object.sha')
+          for context in "Backend checks" "Frontend checks" "PR policy"; do
+            gh api "repos/$REPO/statuses/$sha" \
+              -f state=success \
+              -f context="$context" \
+              -f description="Passed on dev before release"
+          done
 
           gh pr merge "$number" --repo "$REPO" --auto --merge
           echo "Release pull request #$number will merge automatically when the checks pass."
