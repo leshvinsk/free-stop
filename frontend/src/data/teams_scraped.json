@@ -1,83 +1,69 @@
 {
   "year": 2026,
-  "scraped_at": "2026-10-21T00:00:00+00:00",
+  "scraped_at": "2026-10-25T17:20:13.116507+00:00",
   "teams": {
     "mercedes": {
-      "principal": "Toto Wolff",
       "base": "Brackley, United Kingdom",
+      "principal": "Toto Wolff",
       "chassis": "W17",
       "power_unit": "Mercedes",
-      "founded": "2010"
+      "founded": "1970"
     },
     "red-bull-racing": {
-      "principal": "Laurent Mekies",
       "base": "Milton Keynes, United Kingdom",
+      "principal": "Laurent Mekies",
       "chassis": "RB22",
       "power_unit": "Red Bull Ford",
-      "founded": "2005"
+      "founded": "1997"
     },
     "ferrari": {
-      "principal": "Frédéric Vasseur",
       "base": "Maranello, Italy",
+      "principal": "Frédéric Vasseur",
       "chassis": "SF-26",
       "power_unit": "Ferrari",
-      "founded": "1929"
+      "founded": "1950"
     },
     "mclaren": {
-      "principal": "Andrea Stella",
       "base": "Woking, United Kingdom",
+      "principal": "Andrea Stella",
       "chassis": "MCL40",
       "power_unit": "Mercedes",
-      "founded": "1963"
+      "founded": "1966"
     },
     "aston-martin": {
-      "principal": "Adrian Newey",
       "base": "Silverstone, United Kingdom",
+      "principal": "Adrian Newey",
       "chassis": "AMR26",
       "power_unit": "Honda",
-      "founded": "2021"
+      "founded": "2018"
     },
     "alpine": {
-      "principal": "Flavio Briatore",
       "base": "Enstone, United Kingdom",
+      "principal": "Flavio Briatore (Executive Advisor), Steve Nielsen (Managing Director)",
       "chassis": "A526",
       "power_unit": "Mercedes",
-      "founded": "2021"
-    },
-    "williams": {
-      "principal": "James Vowles",
-      "base": "Grove, United Kingdom",
-      "chassis": "FW48",
-      "power_unit": "Mercedes",
-      "founded": "1977"
+      "founded": "1986"
     },
     "racing-bulls": {
-      "principal": "Alan Permane",
       "base": "Faenza, Italy",
+      "principal": "Alan Permane",
       "chassis": "VCARB 03",
       "power_unit": "Red Bull Ford",
-      "founded": "2006"
-    },
-    "haas": {
-      "principal": "Ayao Komatsu",
-      "base": "Kannapolis, United States",
-      "chassis": "VF-26",
-      "power_unit": "Ferrari",
-      "founded": "2014"
+      "founded": "1985"
     },
     "audi": {
-      "principal": "Mattia Binotto",
       "base": "Hinwil, Switzerland",
+      "principal": "Mattia Binotto",
       "chassis": "R26",
       "power_unit": "Audi",
-      "founded": "1993"
+      "founded": "2026"
     },
     "cadillac": {
-      "principal": "Marcin Budkowski",
       "base": "Silverstone, United Kingdom",
+      "principal": "Marcin Budkowski",
       "chassis": "MAC-26",
       "power_unit": "Ferrari",
-      "founded": "2025"
+      "founded": "2026"
     }
   }
 }
