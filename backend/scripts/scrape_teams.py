@@ -28,7 +28,7 @@ F1_SLUGS: dict[str, str] = {
     "alpine": "alpine",
     "williams": "williams",
     "racing-bulls": "racing-bulls",
-    "haas": "haas-f1-team",
+    "haas": "haas",
     "audi": "audi",
     "cadillac": "cadillac",
 }
