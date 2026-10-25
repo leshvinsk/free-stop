@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.svg" alt="Free Stop" width="80" />
+</p>
+
 # Free Stop
 
 [![CI](https://github.com/leshvinsk/free-stop/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/leshvinsk/free-stop/actions/workflows/ci.yml)
