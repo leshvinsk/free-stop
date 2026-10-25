@@ -37,10 +37,19 @@ jobs:
           changes=$(gh api "repos/$REPO/compare/main...dev" \
             --jq '.commits[] | select(.parents | length == 1) | "- " + (.commit.message | split("\n")[0])')
 
+          closes=$(gh api "repos/$REPO/compare/main...dev" \
+            --jq '[.commits[] | select(.parents | length == 1) | .commit.message] | join("\n")' | \
+            grep -Eioh '(closes|fixes|resolves|fix|close|resolve) #[0-9]+' | \
+            sort -u | tr '\n' ' ')
+
           body=$(printf '%s\n\n%s\n\n%s\n' \
             "Automated release of the approved changes below from \`dev\` to \`main\`. This pull request merges itself once the checks pass, and the merge deploys the changes to production." \
             "## Included changes" \
             "$changes")
+
+          if [ -n "$closes" ]; then
+            body=$(printf '%s\n\n%s\n' "$body" "$closes")
+          fi
 
           number=$(gh pr list --repo "$REPO" --base main --head dev --state open --json number --jq '.[0].number // empty')
           if [ -n "$number" ]; then
