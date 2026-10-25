@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- F1-red skewed pill matching the header brand mark -->
+  <polygon points="6,2 30,2 26,30 2,30" fill="#e10600"/>
+  <text
+    x="16" y="22"
+    font-family="'Arial Black', Arial, sans-serif"
+    font-size="13"
+    font-weight="900"
+    font-style="italic"
+    fill="#ffffff"
+    text-anchor="middle"
+    letter-spacing="0.5"
+  >FS</text>
+</svg>
