@@ -54,7 +54,7 @@ This Code of Conduct applies within all project spaces, including the repository
 
 ## Reporting
 
-Instances of abusive, harassing or otherwise unacceptable behaviour may be reported to the project maintainer at **leshvinsk@icloud.com**. All complaints will be reviewed and investigated promptly and fairly.
+Instances of abusive, harassing or otherwise unacceptable behaviour may be reported to the project maintainer at **leshvinsk@gmail.com**. All complaints will be reviewed and investigated promptly and fairly.
 
 Reports should include, where possible:
 
