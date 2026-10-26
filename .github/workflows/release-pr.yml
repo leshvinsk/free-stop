@@ -37,10 +37,22 @@ jobs:
           changes=$(gh api "repos/$REPO/compare/main...dev" \
             --jq '.commits[] | select(.parents | length == 1) | "- " + (.commit.message | split("\n")[0])')
 
-          closes=$(gh api "repos/$REPO/compare/main...dev" \
-            --jq '[.commits[] | select(.parents | length == 1) | .commit.message] | join("\n")' | \
-            grep -Eioh '(closes|fixes|resolves|fix|close|resolve) #[0-9]+' | \
-            sort -u | tr '\n' ' ')
+          # Squash commit subjects carry the PR number as "(#NNN)"; read closing
+          # keywords from the PR body directly because GitHub does not preserve
+          # the commit message body through the squash merge dialog
+          pr_numbers=$(gh api "repos/$REPO/compare/main...dev" \
+            --jq '.commits[] | select(.parents | length == 1) | .commit.message | split("\n")[0]' | \
+            grep -Eo '\(#[0-9]+\)$' | grep -Eo '[0-9]+')
+
+          closes=""
+          for pr_num in $pr_numbers; do
+            pr_closes=$(gh api "repos/$REPO/pulls/$pr_num" --jq '.body // ""' | \
+              grep -Eioh '(closes|fixes|resolves|fix|close|resolve) #[0-9]+')
+            if [ -n "$pr_closes" ]; then
+              closes=$(printf '%s\n%s' "$closes" "$pr_closes")
+            fi
+          done
+          closes=$(printf '%s' "$closes" | sort -u | grep -v '^$' | tr '\n' ' ' | sed 's/ *$//')
 
           body=$(printf '%s\n\n%s\n\n%s\n' \
             "Automated release of the approved changes below from \`dev\` to \`main\`. This pull request merges itself once the checks pass, and the merge deploys the changes to production." \
