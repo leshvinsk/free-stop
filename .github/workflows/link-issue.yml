@@ -1,0 +1,40 @@
+name: Link issue
+
+on:
+  pull_request:
+    types: [opened]
+    branches: [dev]
+
+permissions:
+  pull-requests: write
+
+jobs:
+  link:
+    name: Fill in Closes reference
+    runs-on: ubuntu-latest
+    steps:
+      # Extracts the issue number from the branch name (type/42-description)
+      # and replaces the Closes placeholder in the PR body so contributors
+      # never have to fill it in manually
+      - name: Replace issue placeholder in PR body
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD: ${{ github.head_ref }}
+          NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          issue=$(printf '%s' "$HEAD" | sed 's|[^/]*/\([0-9]*\)-.*|\1|')
+          if [ -z "$issue" ] || [ "$issue" = "$HEAD" ]; then
+            echo "No issue number found in branch name, skipping."
+            exit 0
+          fi
+
+          body=$(gh pr view "$NUMBER" --repo "$REPO" --json body --jq '.body')
+          if ! printf '%s' "$body" | grep -qF 'Closes #<!-- issue number -->'; then
+            echo "Placeholder not found, skipping."
+            exit 0
+          fi
+
+          printf '%s' "$body" | sed "s/Closes #<!-- issue number -->/Closes #$issue/" > /tmp/pr_body.txt
+          gh pr edit "$NUMBER" --repo "$REPO" --body-file /tmp/pr_body.txt
+          echo "Linked issue #$issue to PR #$NUMBER."
