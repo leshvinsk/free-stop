@@ -3,6 +3,7 @@ services:
     name: free-stop-redis
     plan: free
     maxmemoryPolicy: allkeys-lru
+    ipAllowList: []
 
   - type: web
     name: free-stop-api
@@ -20,7 +21,7 @@ services:
         value: INFO
       # Contact for Wikimedia Commons (race photos), whose robot policy requires one
       - key: WIKIMEDIA_CONTACT
-        value: leshvinsk@icloud.com
+        value: leshvinsk@gmail.com
       - key: REDIS_URL
         fromService:
           type: redis
