@@ -1,11 +1,4 @@
 services:
-  - type: redis
-    name: free-stop-redis
-    region: frankfurt
-    plan: free
-    maxmemoryPolicy: allkeys-lru
-    ipAllowList: []
-
   - type: web
     name: free-stop-api
     runtime: python
@@ -24,11 +17,9 @@ services:
       # Contact for Wikimedia Commons (race photos), whose robot policy requires one
       - key: WIKIMEDIA_CONTACT
         value: leshvinsk@gmail.com
+      # Upstash Redis (persistent, unlike Render's free Key Value); value set in the dashboard
       - key: REDIS_URL
-        fromService:
-          type: redis
-          name: free-stop-redis
-          property: connectionString
+        sync: false
 
   - type: web
     name: free-stop-ui
