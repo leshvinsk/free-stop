@@ -8,20 +8,24 @@ from __future__ import annotations
 import logging
 import os
 import pickle
+import time
 from typing import Any
 
 logger = logging.getLogger(__name__)
 
 _client: Any = None  # redis.Redis | None
-_checked = False
+_next_attempt = 0.0
+# Redis is reached over the internet, so a failed connection is retried rather than
+# disabling the cache until the next restart
+_RETRY_SECONDS = 60
 
 
 def _get() -> Any:
     """Return a live Redis client, or None if unavailable."""
-    global _client, _checked
-    if _checked:
+    global _client, _next_attempt
+    if _client is not None or time.monotonic() < _next_attempt:
         return _client
-    _checked = True
+    _next_attempt = time.monotonic() + _RETRY_SECONDS
 
     url = os.environ.get("REDIS_URL", "")
     if not url:

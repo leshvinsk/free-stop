@@ -119,7 +119,7 @@ Crew execution is calculated independently as the difference between a stop's pi
 | Data access | httpx, Tenacity for retry and backoff |
 | Validation | Pydantic v2 |
 | Frontend | Vue 3, TypeScript, Vite |
-| Caching | Redis as the primary store, local disk as the fallback |
+| Caching | Upstash Redis as the primary store, local disk as the fallback |
 | Hosting | Render |
 | Continuous integration | GitHub Actions |
 | Code quality | Ruff, mypy, ESLint, Prettier |
@@ -331,13 +331,12 @@ Every change starts as an issue, is developed on its own branch, and is reviewed
 
 ## Deployment
 
-`applications/render.yaml` is a Render Blueprint that defines all three production services.
+`applications/render.yaml` is a Render Blueprint that defines both production services. The score cache is an Upstash Redis database in Frankfurt, which keeps its data across restarts.
 
 | Service | Type | Purpose |
 |---|---|---|
 | `free-stop-api` | Python web service | FastAPI backend |
 | `free-stop-ui` | Static site | Vue 3 frontend |
-| `free-stop-redis` | Redis | Score cache |
 
 When the Blueprint is created in Render, its path must be set to `applications/render.yaml`. Both web services deploy from `main` only, so changes reach production only through an approved pull request into `dev` followed by the automated release.
 
@@ -375,7 +374,9 @@ Render's free tier stops a service after 15 minutes without traffic. The keep wa
 
 - `REDIS_URL` is optional. If Redis is unavailable, the backend continues to operate using the disk cache.
 - Completed races are cached permanently. Races within 24 hours of their finish are refreshed until OpenF1 data is complete.
-- The disk cache on Render is cleared on each deployment, whereas Redis retains scores across deployments.
+- The disk cache on Render is cleared on each deployment, whereas Upstash Redis retains scores across deployments and restarts.
+- `REDIS_URL` is set in the Render dashboard, not in `render.yaml`, because it contains the Upstash password. It must use the `rediss://` scheme.
+- If Redis cannot be reached, the backend retries the connection every 60 seconds.
 - Branch protection is defined in `.github/rulesets/` and applied through the repository settings.
 - The synchronisation and release workflows require the repository setting that allows GitHub Actions to create and approve pull requests.
 
