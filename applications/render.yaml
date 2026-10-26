@@ -1,6 +1,7 @@
 services:
   - type: redis
     name: free-stop-redis
+    region: frankfurt
     plan: free
     maxmemoryPolicy: allkeys-lru
     ipAllowList: []
@@ -8,6 +9,7 @@ services:
   - type: web
     name: free-stop-api
     runtime: python
+    region: frankfurt
     # dev is the default branch; only reviewed releases on main are deployed
     branch: main
     buildCommand: pip install -e .
