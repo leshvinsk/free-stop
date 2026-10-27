@@ -1,0 +1,46 @@
+name: Close linked issues
+
+# GitHub only honours closing keywords when a pull request merges into the default branch
+# (main). Changes merge into dev first and reach main through a release pull request merged
+# by GITHUB_TOKEN, which GitHub does not act on, so linked issues are closed here instead.
+on:
+  push:
+    branches: [dev]
+
+permissions: {}
+
+jobs:
+  close:
+    name: Close issues linked from merged pull requests
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: read
+    steps:
+      - name: Close each issue named by a closing keyword
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          # Squash merges end the commit subject with "(#NNN)", the pull request number
+          prs=$(jq -r '.commits[].message | split("\n")[0]' "$GITHUB_EVENT_PATH" | \
+            sed -nE 's/.*\(#([0-9]+)\)$/\1/p' | sort -u)
+
+          for pr in $prs; do
+            # grep exits 1 when nothing matches, which would stop the script under bash -e
+            issues=$(gh api "repos/$REPO/pulls/$pr" --jq '.body // ""' | \
+              { grep -Eio '(close[sd]?|fix(e[sd])?|resolve[sd]?):? +#[0-9]+' || true; } | \
+              grep -Eo '[0-9]+$' | sort -u || true)
+
+            for issue in $issues; do
+              # Skip pull request numbers and issues that are already closed
+              info=$(gh api "repos/$REPO/issues/$issue" --jq '[.state, (has("pull_request") | tostring)] | join(" ")' || true)
+              if [ "$info" != "open false" ]; then
+                echo "#$issue skipped ($info)"
+                continue
+              fi
+              gh issue close "$issue" --repo "$REPO" --reason completed \
+                --comment "Closed by #$pr, merged into \`dev\`. It reaches production with the next automatic release to \`main\`."
+              echo "#$issue closed by #$pr"
+            done
+          done

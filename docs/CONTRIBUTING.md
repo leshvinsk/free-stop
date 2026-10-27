@@ -154,7 +154,7 @@ git push --force-with-lease origin feat/42-tyre-compound-timeline
 
 ### Step 10: Open a pull request
 
-Open a pull request from your branch into `leshvinsk/free-stop:dev`. Complete every section of the pull request template, and include `Closes #42` so that the issue closes automatically when the change is merged.
+Open a pull request from your branch into `leshvinsk/free-stop:dev`. Complete every section of the pull request template, and keep the `Closes #42` line, which is filled in from your branch name, so that the issue closes automatically when the change is merged into `dev`.
 
 ### Step 11: Respond to review
 

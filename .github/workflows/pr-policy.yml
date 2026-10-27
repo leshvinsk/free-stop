@@ -11,6 +11,9 @@ permissions:
 jobs:
   policy:
     name: PR policy
+    # The data sync reports this check itself and merges within seconds, so a run here would
+    # compare the branch against a dev that already contains it and fail
+    if: github.event.pull_request.user.login != 'free-stop-data-sync[bot]'
     runs-on: ubuntu-latest
     steps:
       # Values are passed through env, never interpolated into the script, so a crafted

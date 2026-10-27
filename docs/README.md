@@ -156,6 +156,8 @@ free-stop/
 │   │   ├── ci.yml                   # Backend and frontend checks
 │   │   ├── pr-policy.yml            # Target branch, branch name and title rules
 │   │   ├── release-pr.yml           # Promotes approved changes from dev to main
+│   │   ├── link-issue.yml           # Fills in the Closes reference from the branch name
+│   │   ├── close-issues.yml         # Closes linked issues when a pull request merges into dev
 │   │   ├── sync-teams.yml           # Team data synchronisation from formula1.com
 │   │   └── keep-warm.yml            # Health check that prevents idle spin down
 │   ├── ISSUE_TEMPLATE/              # Bug report, data correction and feature request forms
@@ -344,9 +346,11 @@ When the Blueprint is created in Render, its path must be set to `applications/r
 
 | Workflow | Trigger | Purpose |
 |---|---|---|
-| CI | Every pull request, and pushes to `dev` and `main` | Runs all backend and frontend checks |
-| PR policy | Every pull request | Verifies the target branch, branch name, title format, and that the branch is rebased on the latest `dev` |
+| CI | Every pull request into `dev`, and pushes to `dev` and `main` | Runs all backend and frontend checks |
+| PR policy | Every pull request into `dev`, except the data sync's | Verifies the target branch, branch name, title format, and that the branch is rebased on the latest `dev` |
 | Release to main | Every change to `dev` | Opens the release pull request from `dev` to `main` and merges it automatically once checks pass |
+| Link issue | Every pull request into `dev` | Fills in `Closes #<issue>` from the issue number in the branch name |
+| Close linked issues | Every change to `dev` | Closes the issues named by `Closes #<issue>` in each merged pull request |
 | Sync team data | Daily at 06:00 UTC, and hourly from Thursday to Sunday | Opens and merges a pull request when formula1.com team data changes and the frontend checks pass |
 | Keep warm | Every 10 minutes | Prevents the hosted API from idling |
 | Dependabot | Weekly on Monday | Opens grouped dependency updates against `dev` |
