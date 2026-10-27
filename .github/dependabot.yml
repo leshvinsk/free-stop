@@ -28,6 +28,11 @@ updates:
     groups:
       frontend:
         patterns: ["*"]
+    # typescript-eslint and vue-tsc do not yet support TypeScript 6.1 or 7.
+    # Remove once typescript-eslint's peer range allows a newer TypeScript.
+    ignore:
+      - dependency-name: typescript
+        versions: [">=6.1.0"]
 
   - package-ecosystem: github-actions
     directory: /
