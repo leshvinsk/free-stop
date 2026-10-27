@@ -347,13 +347,13 @@ When the Blueprint is created in Render, its path must be set to `applications/r
 | CI | Every pull request, and pushes to `dev` and `main` | Runs all backend and frontend checks |
 | PR policy | Every pull request | Verifies the target branch, branch name, title format, and that the branch is rebased on the latest `dev` |
 | Release to main | Every change to `dev` | Opens the release pull request from `dev` to `main` and merges it automatically once checks pass |
-| Sync team data | Daily at 06:00 UTC, and hourly from Thursday to Sunday | Opens a pull request when formula1.com team data changes |
+| Sync team data | Daily at 06:00 UTC, and hourly from Thursday to Sunday | Opens and merges a pull request when formula1.com team data changes and the frontend checks pass |
 | Keep warm | Every 10 minutes | Prevents the hosted API from idling |
 | Dependabot | Weekly on Monday | Opens grouped dependency updates against `dev` |
 
 ### Team Data Synchronisation
 
-The synchronisation workflow reads every team page on formula1.com and compares the result with `frontend/src/data/teams_scraped.json`. When the data has changed, it opens or updates a pull request against `dev`. Nothing reaches production until a maintainer approves and merges that pull request. Verified values in `frontend/src/data/teamInfo.ts` always take precedence over synchronised values.
+The synchronisation workflow reads every team page on formula1.com and compares the result with `frontend/src/data/teams_scraped.json`. When the data has changed, it runs the frontend checks against the new data and opens a pull request against `dev`. If the checks pass, the pull request merges automatically and the release workflow promotes it to `main`. If they fail, the pull request stays open for review and a `data-alert` issue is opened. Verified values in `frontend/src/data/teamInfo.ts` always take precedence over synchronised values.
 
 If fewer than eight of the eleven teams can be read, no data is written and the workflow opens an issue labelled `data-alert` so that the failure is investigated promptly.
 
@@ -378,7 +378,8 @@ Render's free tier stops a service after 15 minutes without traffic. The keep wa
 - `REDIS_URL` is set in the Render dashboard, not in `render.yaml`, because it contains the Upstash password. It must use the `rediss://` scheme.
 - If Redis cannot be reached, the backend retries the connection every 60 seconds.
 - Branch protection is defined in `.github/rulesets/` and applied through the repository settings.
-- The synchronisation and release workflows require the repository setting that allows GitHub Actions to create and approve pull requests.
+- The release workflow requires the repository setting that allows GitHub Actions to create and approve pull requests.
+- The synchronisation workflow acts as the `free-stop-data-sync` GitHub App, the only actor allowed to bypass review on `dev`. It needs the `DATA_SYNC_APP_CLIENT_ID` repository variable and the `DATA_SYNC_APP_PRIVATE_KEY` repository secret.
 
 ## Contributing
 

@@ -1,8 +1,10 @@
 name: Link issue
 
 on:
+  # edited covers a pull request opened against main and then retargeted to dev;
+  # the step only acts while the placeholder is still present
   pull_request:
-    types: [opened]
+    types: [opened, edited, reopened]
     branches: [dev]
 
 permissions:
