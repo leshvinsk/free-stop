@@ -16,17 +16,24 @@ jobs:
   sync:
     name: Scrape formula1.com
     runs-on: ubuntu-latest
+    # The pull request, statuses and merge use the free-stop-data-sync App token, the only
+    # actor allowed to bypass review on dev. GITHUB_TOKEN is only used for alert issues.
     permissions:
-      contents: write
-      pull-requests: write
+      contents: read
       issues: write
-      actions: write
-      statuses: write
 
     steps:
+      - name: Create the data sync App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.DATA_SYNC_APP_CLIENT_ID }}
+          private-key: ${{ secrets.DATA_SYNC_APP_PRIVATE_KEY }}
+
       - uses: actions/checkout@v7
         with:
           ref: dev
+          persist-credentials: false
 
       - uses: actions/setup-python@v7
         with:
@@ -38,11 +45,42 @@ jobs:
       - name: Scrape team data
         run: python backend/scripts/scrape_teams.py
 
-      # dev is protected, so changes arrive as a pull request for the maintainer to approve
+      - name: Detect a data change
+        id: diff
+        run: |
+          if git diff --quiet -- frontend/src/data/teams_scraped.json; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-node@v7
+        if: steps.diff.outputs.changed == 'true'
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # The new data must pass the same frontend checks as any other change before it merges
+      - name: Run frontend checks with the new data
+        id: checks
+        if: steps.diff.outputs.changed == 'true'
+        continue-on-error: true
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run type-check
+          npm run lint
+          npm run format -- --check
+          npm test
+          npx vite build
+
       - name: Open or update the data pull request
         id: cpr
+        if: steps.diff.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v8
         with:
+          token: ${{ steps.app-token.outputs.token }}
           base: dev
           branch: bot/sync-team-data
           delete-branch: true
@@ -53,30 +91,55 @@ jobs:
           body: |
             Automated update from the formula1.com team pages.
 
-            Review the diff before merging. Verified values in `frontend/src/data/teamInfo.ts`
-            always win over this file, so this only fills gaps for new seasons and new teams.
+            The frontend checks run against the new data before this pull request is opened.
+            If they pass, it merges automatically and is released to `main`. If they fail, it
+            stays open for review. Verified values in `frontend/src/data/teamInfo.ts` always win
+            over this file, so this only fills gaps for new seasons and new teams.
 
-      # Post all three required check statuses directly. The data PR only modifies a JSON file,
-      # so CI would pass trivially; dispatching it as a separate workflow run requires maintainer
-      # approval for bot-created PRs, which blocks the merge unnecessarily.
-      - name: Post check statuses on the data pull request
-        if: steps.cpr.outputs.pull-request-operation == 'created' || steps.cpr.outputs.pull-request-operation == 'updated'
+      - name: Report check results on the data pull request
+        if: steps.cpr.outputs.pull-request-head-sha != ''
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
           REPO: ${{ github.repository }}
           SHA: ${{ steps.cpr.outputs.pull-request-head-sha }}
+          OUTCOME: ${{ steps.checks.outcome }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          for context in "Backend checks" "Frontend checks" "PR policy"; do
-            gh api "repos/$REPO/statuses/$SHA" -f state=success -f context="$context" \
-              -f description="Data-only change, CI not required"
-          done
+          if [ "$OUTCOME" = "success" ]; then
+            frontend=success; description="Passed in the data sync run"
+          else
+            frontend=failure; description="Failed in the data sync run"
+          fi
+          # Backend code and the pull request policy are unaffected by a data-only change
+          gh api "repos/$REPO/statuses/$SHA" -f state=success -f context="Backend checks" \
+            -f description="Data-only change, backend not affected" -f target_url="$RUN_URL"
+          gh api "repos/$REPO/statuses/$SHA" -f state=success -f context="PR policy" \
+            -f description="Automated data pull request" -f target_url="$RUN_URL"
+          gh api "repos/$REPO/statuses/$SHA" -f state="$frontend" -f context="Frontend checks" \
+            -f description="$description" -f target_url="$RUN_URL"
+
+      # A merge made with the App token triggers the release workflow, which promotes dev to main
+      - name: Merge the data pull request
+        if: steps.cpr.outputs.pull-request-number != '' && steps.checks.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPO: ${{ github.repository }}
+          NUMBER: ${{ steps.cpr.outputs.pull-request-number }}
+        run: gh pr merge "$NUMBER" --repo "$REPO" --squash --admin --delete-branch
 
       - name: Open issue on failure
-        if: failure()
+        if: failure() || steps.checks.outcome == 'failure'
         uses: actions/github-script@v9
+        env:
+          CHECKS_FAILED: ${{ steps.checks.outcome == 'failure' }}
+          PR_URL: ${{ steps.cpr.outputs.pull-request-url }}
         with:
           script: |
-            const title = `[Alert] Team data sync failed ${new Date().toISOString().slice(0, 10)}`;
+            const checksFailed = process.env.CHECKS_FAILED === 'true';
+            const date = new Date().toISOString().slice(0, 10);
+            const title = checksFailed
+              ? `[Alert] Team data failed frontend checks ${date}`
+              : `[Alert] Team data sync failed ${date}`;
             const { data: issues } = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -84,17 +147,30 @@ jobs:
               state: 'open',
             });
             if (issues.some(i => i.title === title)) return;
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = checksFailed
+              ? [
+                  '## Team data failed frontend checks',
+                  '',
+                  `**Run:** ${runUrl}`,
+                  `**Pull request:** ${process.env.PR_URL || 'not opened'}`,
+                  '',
+                  'The scraped data broke the frontend checks, so it was not merged.',
+                  'Review the pull request diff and the failing step in the run.',
+                ]
+              : [
+                  '## Team data sync failed',
+                  '',
+                  `**Run:** ${runUrl}`,
+                  '',
+                  'The scraper could not retrieve enough team data from formula1.com, or the',
+                  'data sync App token could not be created.',
+                  'Check whether the page structure changed and update `backend/scripts/scrape_teams.py` if needed.',
+                ];
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
               title,
-              body: [
-                '## Team data sync failed',
-                '',
-                `**Run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
-                '',
-                'The scraper could not retrieve enough team data from formula1.com.',
-                'Check whether the page structure changed and update `backend/scripts/scrape_teams.py` if needed.',
-              ].join('\n'),
+              body: body.join('\n'),
               labels: ['data-alert'],
             });
