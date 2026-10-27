@@ -37,33 +37,11 @@ jobs:
           changes=$(gh api "repos/$REPO/compare/main...dev" \
             --jq '.commits[] | select(.parents | length == 1) | "- " + (.commit.message | split("\n")[0])')
 
-          # Squash commit subjects carry the PR number as "(#NNN)"; read closing
-          # keywords from the PR body directly because GitHub does not preserve
-          # the commit message body through the squash merge dialog.
-          # grep exits 1 on no match, which pipefail treats as a failure, so every
-          # search tolerates pull requests without a closing keyword, such as Dependabot's
-          pr_numbers=$(gh api "repos/$REPO/compare/main...dev" \
-            --jq '.commits[] | select(.parents | length == 1) | .commit.message | split("\n")[0]' | \
-            { grep -Eo '\(#[0-9]+\)$' || true; } | { grep -Eo '[0-9]+' || true; })
-
-          closes=""
-          for pr_num in $pr_numbers; do
-            pr_closes=$(gh api "repos/$REPO/pulls/$pr_num" --jq '.body // ""' | \
-              { grep -Eioh '(closes|fixes|resolves|fix|close|resolve) #[0-9]+' || true; })
-            if [ -n "$pr_closes" ]; then
-              closes=$(printf '%s\n%s' "$closes" "$pr_closes")
-            fi
-          done
-          closes=$(printf '%s' "$closes" | sort -u | { grep -v '^$' || true; } | tr '\n' ' ' | sed 's/ *$//')
-
+          # Linked issues are closed when their pull request merges into dev (close-issues.yml)
           body=$(printf '%s\n\n%s\n\n%s\n' \
             "Automated release of the approved changes below from \`dev\` to \`main\`. This pull request merges itself once the checks pass, and the merge deploys the changes to production." \
             "## Included changes" \
             "$changes")
-
-          if [ -n "$closes" ]; then
-            body=$(printf '%s\n\n%s\n' "$body" "$closes")
-          fi
 
           number=$(gh pr list --repo "$REPO" --base main --head dev --state open --json number --jq '.[0].number // empty')
           if [ -n "$number" ]; then
