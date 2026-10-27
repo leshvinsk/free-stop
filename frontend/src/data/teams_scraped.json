@@ -1,6 +1,6 @@
 {
   "year": 2026,
-  "scraped_at": "2026-10-25T23:45:01.111100+00:00",
+  "scraped_at": "2026-10-27T11:32:04.249686+00:00",
   "teams": {
     "mercedes": {
       "base": "Brackley, United Kingdom",
@@ -8,6 +8,13 @@
       "chassis": "W17",
       "power_unit": "Mercedes",
       "founded": "1970"
+    },
+    "red-bull-racing": {
+      "base": "Milton Keynes, United Kingdom",
+      "principal": "Laurent Mekies",
+      "chassis": "RB22",
+      "power_unit": "Red Bull Ford",
+      "founded": "1997"
     },
     "ferrari": {
       "base": "Maranello, Italy",
@@ -36,6 +43,13 @@
       "chassis": "A526",
       "power_unit": "Mercedes",
       "founded": "1986"
+    },
+    "williams": {
+      "base": "Grove, United Kingdom",
+      "principal": "James Vowles",
+      "chassis": "FW48",
+      "power_unit": "Mercedes",
+      "founded": "1978"
     },
     "racing-bulls": {
       "base": "Faenza, Italy",
