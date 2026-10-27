@@ -86,6 +86,9 @@ jobs:
           delete-branch: true
           add-paths: frontend/src/data/teams_scraped.json
           commit-message: "data: sync team data from formula1.com"
+          # Credit the App rather than whoever triggered the run
+          author: free-stop-data-sync[bot] <348896371+free-stop-data-sync[bot]@users.noreply.github.com>
+          committer: free-stop-data-sync[bot] <348896371+free-stop-data-sync[bot]@users.noreply.github.com>
           title: "data: sync team data from formula1.com"
           labels: data
           body: |
