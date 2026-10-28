@@ -39,7 +39,7 @@ class SessionScore:
         self.typical_lane = typical_lane
         self.lap_status = lap_status
         self.periods = periods
-        # DNF / DNS / DSQ by driver number; those drivers are not scored for this race
+        # DNF / DNS / DSQ by driver number; those drivers get no timing luck for this race
         self.outcomes = outcomes or {}
         self._driver_map: dict[int, Driver] = {d.driver_number: d for d in drivers}
 
@@ -98,15 +98,7 @@ async def score_session(
     analysis = analyse_race(
         [d.driver_number for d in drivers], pit_stops, laps, rc_messages, timeline, lap_status
     )
-    # A retirement or disqualification ends the race early, so its pit stops can't be judged
-    # against a full race. Those drivers carry no luck or crew score, which also keeps them
-    # out of the field average and season totals.
-    results = [
-        dataclasses.replace(r, race_luck=None, race_execution=None)
-        if r.driver_number in outcomes
-        else r
-        for r in analysis.results
-    ]
+    results = without_outcome_luck(analysis.results, outcomes)
     return SessionScore(
         session,
         drivers,
@@ -118,6 +110,19 @@ async def score_session(
         timeline.periods,
         outcomes,
     )
+
+
+def without_outcome_luck(
+    results: list[RaceLuckResult], outcomes: dict[int, str]
+) -> list[RaceLuckResult]:
+    """A retirement, non-start or disqualification ends the race early, so timing luck can't be
+    judged against a full race and is cleared, which also keeps those drivers out of the field
+    average and season luck. The crew score stays: each completed stop was still a normal stop
+    timed against the race's typical pit-lane time."""
+    return [
+        dataclasses.replace(r, race_luck=None) if r.driver_number in outcomes else r
+        for r in results
+    ]
 
 
 def _leader_lap_starts(laps: list[Lap]) -> dict[int, datetime]:

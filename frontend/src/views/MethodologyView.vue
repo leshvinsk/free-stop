@@ -25,7 +25,7 @@ const guide = [
     title: 'Follow a driver race by race',
     body: 'Each row is one Grand Prix: the time their timing saved on the right, what the pit crew saved in the middle, and a bar for how lucky or unlucky it was.',
     points: [
-      'DNF, DNS or DSQ means the race ended early for them, so it is not scored and does not count in their season.',
+      'DNF, DNS or DSQ means the race ended early for them, so their timing is not scored and does not count in their season. Stops they completed still count for the crew.',
       'A dash under Crew saved means there was no normal stop to time, such as a tyre change under a red flag.',
     ],
   },
@@ -69,8 +69,8 @@ const steps = [
   },
   {
     title: 'Leave out races that ended early',
-    body: 'A retirement, a car that never started or a disqualification means there is no full race to judge. Those races show DNF, DNS or DSQ, carry no score and stay out of the field average and the season totals.',
-    formula: 'DNF / DNS / DSQ → not scored',
+    body: 'A retirement, a car that never started or a disqualification means there is no full race to judge. Those races show DNF, DNS or DSQ, carry no timing score and stay out of the field average and the season luck. The crew still did every stop made before the race ended, so those stops keep their crew score.',
+    formula: 'DNF / DNS / DSQ → timing not scored, crew still scored',
   },
 ] as const
 
@@ -83,7 +83,11 @@ const labels = [
   ['MISSED', 'unlucky', 'Pitted just before a neutralisation and watched rivals stop for less.'],
   ['PENALTY', 'flag', 'A penalty was served at the stop. Counted separately, not as luck.'],
   ['SLOW PIT', 'crew', 'The crew took noticeably longer than a normal stop.'],
-  ['DNF · DNS · DSQ', 'muted', 'Did not finish, did not start, or disqualified. Not scored.'],
+  [
+    'DNF · DNS · DSQ',
+    'muted',
+    'Did not finish, did not start, or disqualified. Timing not scored; completed stops still count for the crew.',
+  ],
   ['N/A', 'muted', 'No luck score for this race, usually because it ended early.'],
   ['—', 'muted', 'No crew time to measure, such as a tyre change under a red flag.'],
   ['No stops', 'muted', 'Ran the whole race without pitting.'],
