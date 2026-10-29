@@ -13,15 +13,19 @@ In-process store of scored race sessions.
 """
 
 import asyncio
+import hashlib
+import json
 import logging
 import time
 from collections.abc import Callable, Coroutine
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from typing import Any
 
 import httpx
+from pydantic import BaseModel, TypeAdapter
 
-from app import extras, headshots, photos, score_cache
+from app import extras, headshots, photos, redis_cache, score_cache
 from app.models import CircuitMap, RacePhotos, RaceWeather
 from app.openf1 import client as openf1
 from app.openf1.schemas import Session
@@ -35,10 +39,74 @@ SESSIONS_TTL = 900  # seconds the season calendar is cached
 FAILURE_COOLDOWN = 300  # seconds before a failed session is retried
 SETTLE_DELAY = timedelta(hours=3)  # OpenF1 data is final this long after a race ends
 
+# Finished races' maps, weather and photos, and finished seasons' calendars, are kept in Redis
+# so a restart or deploy never sends a visitor back to OpenF1 for them. Keys carry a
+# fingerprint of the code that builds them, so a change to that code rebuilds them.
+_APP = Path(__file__).resolve().parent
+
+
+def _fingerprint(*paths: Path) -> str:
+    return hashlib.sha256(b"".join(p.read_bytes() for p in paths)).hexdigest()[:12]
+
+
+_SCHEMAS = _APP / "openf1" / "schemas.py"
+_EXTRAS_VERSION = _fingerprint(_APP / "extras.py", _APP / "photos.py", _APP / "models.py", _SCHEMAS)
+_CALENDAR_VERSION = _fingerprint(_SCHEMAS)
+_EXTRA_MODELS: dict[str, type[BaseModel]] = {
+    "circuit": CircuitMap,
+    "weather": RaceWeather,
+    "photos": RacePhotos,
+}
+_sessions_adapter = TypeAdapter(list[Session])
+
 
 def is_settled(session: Session) -> bool:
     end = session.date_end or session.date_start + timedelta(hours=3)
     return datetime.now(UTC) - end > SETTLE_DELAY
+
+
+def _season_over(year: int) -> bool:
+    return year < datetime.now(UTC).year
+
+
+def _load_extra(kind: str, session_key: int) -> BaseModel | None:
+    text = redis_cache.load_text(f"fs:extra:{kind}:{_EXTRAS_VERSION}:{session_key}")
+    if text is None:
+        return None
+    try:
+        return _EXTRA_MODELS[kind].model_validate_json(text)
+    except ValueError:
+        return None  # an unreadable entry is rebuilt and overwritten
+
+
+def _save_extra(kind: str, session_key: int, value: object) -> None:
+    # A race with no photos found is looked up again after a restart rather than kept empty
+    if not isinstance(value, BaseModel) or (isinstance(value, RacePhotos) and not value.photos):
+        return
+    redis_cache.save_text(
+        f"fs:extra:{kind}:{_EXTRAS_VERSION}:{session_key}", value.model_dump_json()
+    )
+
+
+def _load_calendar_cache(year: int) -> tuple[list[Session], dict[int, str]] | None:
+    text = redis_cache.load_text(f"fs:calendar:{_CALENDAR_VERSION}:{year}")
+    if text is None:
+        return None
+    try:
+        saved = json.loads(text)
+        sessions = _sessions_adapter.validate_python(saved["sessions"])
+        names = {int(k): str(v) for k, v in saved["meetings"].items()}
+    except (ValueError, KeyError, TypeError):
+        return None
+    return sessions, names
+
+
+def _save_calendar_cache(year: int, sessions: list[Session], names: dict[int, str]) -> None:
+    payload = {
+        "sessions": _sessions_adapter.dump_python(sessions, mode="json"),
+        "meetings": {str(k): v for k, v in names.items()},
+    }
+    redis_cache.save_text(f"fs:calendar:{_CALENDAR_VERSION}:{year}", json.dumps(payload))
 
 
 class ScoreStore:
@@ -70,7 +138,9 @@ class ScoreStore:
         cached = self._calendars.get(year)
         if cached is None:
             return await self._load_calendar(year)
-        if time.monotonic() - cached[0] >= SESSIONS_TTL and year not in self._calendar_refresh:
+        # A finished season's calendar never changes, so only the current one is refreshed
+        stale = time.monotonic() - cached[0] >= SESSIONS_TTL and not _season_over(year)
+        if stale and year not in self._calendar_refresh:
             task = asyncio.create_task(self._load_calendar(year))
             self._calendar_refresh[year] = task
             task.add_done_callback(lambda _: self._calendar_refresh.pop(year, None))
@@ -81,13 +151,19 @@ class ScoreStore:
         lock = self._calendar_locks.setdefault(year, asyncio.Lock())
         async with lock:
             cached = self._calendars.get(year)
-            if cached and time.monotonic() - cached[0] < SESSIONS_TTL:
+            if cached and (_season_over(year) or time.monotonic() - cached[0] < SESSIONS_TTL):
                 return cached[1]
+            if _season_over(year) and (saved := _load_calendar_cache(year)):
+                sessions, names = saved
+                self._meeting_names.update(names)
+                self._calendars[year] = (time.monotonic(), sessions)
+                return sessions
             now = datetime.now(UTC)
             all_sessions, meetings = await asyncio.gather(
                 openf1.get_sessions(self._http, year), openf1.get_meetings(self._http, year)
             )
-            self._meeting_names.update({m.meeting_key: m.meeting_name for m in meetings})
+            names = {m.meeting_key: m.meeting_name for m in meetings}
+            self._meeting_names.update(names)
             sessions = sorted(
                 (
                     s
@@ -98,6 +174,8 @@ class ScoreStore:
                 key=lambda s: s.date_start,
             )
             self._calendars[year] = (time.monotonic(), sessions)
+            if _season_over(year) and sessions:
+                _save_calendar_cache(year, sessions, names)
             return sessions
 
     def race_name(self, session: Session) -> str:
@@ -255,6 +333,11 @@ class ScoreStore:
         cached = self._extras.get(key)
         if cached and (is_settled(session) or time.monotonic() - cached[0] < RECENT_TTL):
             return cached[1]
+        if cached is None and is_settled(session):
+            saved = _load_extra(kind, session.session_key)
+            if saved is not None:
+                self._extras[key] = (time.monotonic(), saved)
+                return saved
         task = self._extras_inflight.get(key)
         if task is None:
             task = asyncio.create_task(build(self._http, session, persist=is_settled(session)))
@@ -264,6 +347,8 @@ class ScoreStore:
                 self._extras_inflight.pop(key, None)
                 if not t.cancelled() and t.exception() is None:
                     self._extras[key] = (time.monotonic(), t.result())
+                    if is_settled(session):
+                        _save_extra(kind, session.session_key, t.result())
 
             task.add_done_callback(done)
             self._track(task)
