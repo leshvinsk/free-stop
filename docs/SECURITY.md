@@ -34,7 +34,7 @@ Please report vulnerabilities privately using GitHub's private vulnerability rep
 2. Select **Report a vulnerability**.
 3. Complete the advisory form with the information listed below.
 
-If you are unable to use GitHub's reporting feature, send your report by email to **leshvinsk@icloud.com** with the subject line `Security report: Free Stop`.
+If you are unable to use GitHub's reporting feature, send your report by email to **leshvinsk@gmail.com** with the subject line `Security report: Free Stop`.
 
 ## Information to Include
 

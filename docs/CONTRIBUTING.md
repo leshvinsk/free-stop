@@ -26,7 +26,7 @@ All participants are expected to follow the [Code of Conduct](CODE_OF_CONDUCT.md
 
 ## Overview
 
-Free Stop follows an issue driven workflow. Every change, however small, begins with an issue, is developed on a dedicated branch, and is merged through a reviewed pull request into the `dev` branch. Once a maintainer approves and merges a pull request into `dev`, the change is released to `main`, and therefore to production, automatically.
+Free Stop follows an issue driven workflow. Every change, however small, begins with an issue, is developed on a dedicated branch, and is merged through a reviewed pull request into the `dev` branch. Once a maintainer approves and merges a pull request into `dev`, its issue closes and the change is released to `main`, and therefore to production, automatically. Each day's changes are then published together as a versioned release.
 
 ## Ways to Contribute
 
@@ -52,7 +52,7 @@ Free Stop does not grant direct write access to contributors. All changes are su
 
 | Branch | Role | Accepts pull requests from | Merge method | Merged by |
 |---|---|---|---|---|
-| `dev` | Default and integration branch | Contributor branches | Squash merge | Maintainer |
+| `dev` | Integration branch | Contributor branches | Squash merge | Maintainer |
 | `main` | Production branch | `dev` only | Merge commit | Automated release workflow |
 | `<type>/<issue>-<description>` | One branch per issue | Not applicable | Not applicable | Not applicable |
 
@@ -71,7 +71,7 @@ dev
 main   deployed to production
 ```
 
-Pull requests must always target `dev`. Pull requests that target `main` from any branch other than `dev` fail the policy check and are closed.
+Pull requests must always target `dev`. The repository's default branch is `main`, so GitHub suggests `main` as the target when you open a pull request: always change it to `dev`. Pull requests that target `main` from any branch other than `dev` fail the policy check and are closed.
 
 ## Contribution Workflow
 
@@ -154,7 +154,13 @@ git push --force-with-lease origin feat/42-tyre-compound-timeline
 
 ### Step 10: Open a pull request
 
-Open a pull request from your branch into `leshvinsk/free-stop:dev`. Complete every section of the pull request template, and keep the `Closes #42` line, which is filled in from your branch name, so that the issue closes automatically when the change is merged into `dev`.
+Open a pull request from your branch into `leshvinsk/free-stop:dev`. The quickest way is to open this address, replacing the branch name, which selects `dev` as the target for you:
+
+```text
+https://github.com/leshvinsk/free-stop/compare/dev...<your-username>:free-stop:feat/42-tyre-compound-timeline
+```
+
+Before selecting **Create pull request**, check that the base branch shows `dev`. Complete every section of the pull request template. Leave the `Closes #<issue number>` placeholder as it is: once the pull request is opened, it is filled in from your branch name, so that the issue closes automatically when the change is merged into `dev`.
 
 ### Step 11: Respond to review
 
@@ -204,8 +210,11 @@ Commit messages and pull request titles follow the [Conventional Commits](https:
 | `feat: show tyre compound on the race timeline` | Yes |
 | `fix(scoring): exclude disqualified drivers from the field average` | Yes |
 | `data: correct the 2025 Alpine team principal` | Yes |
+| `fix(scoring)!: count crew time for retired drivers` | Yes, and marks a breaking change |
 | `Updated stuff` | No |
 | `Fix bug.` | No |
+
+The type also decides the version of the next [release](#release-process): a `feat` makes it a minor version, and a `!` after the type, as in `fix(scoring)!:`, makes it a major version. Use `!` only when a change alters figures already published on the site, such as a change to the scoring method.
 
 ## Pull Request Requirements
 
@@ -279,6 +288,7 @@ Changes to the scoring formula, the baseline calculation or the classification o
 - New or updated tests in `backend/tests/test_formula.py` or `backend/tests/test_neutralised.py`
 - A list of the races or seasons whose results change as a consequence
 - An update to the methodology page where the explanation is affected
+- A `!` in the title, as in `fix(scoring)!: ...`, when published figures change, so that the release is a major version
 
 ## Data Corrections
 
@@ -286,11 +296,17 @@ Free Stop publishes verified data only. Every correction must cite an official s
 
 - To report inaccurate data, open an issue using the **Data correction** form.
 - To submit a correction directly, edit `frontend/src/data/teamInfo.ts` on a `data/<issue>-<description>` branch and link the source in the pull request.
-- Do not edit `frontend/src/data/teams_scraped.json`. It is maintained by an automated workflow and is overwritten on each synchronisation.
+- Do not edit `frontend/src/data/teams_scraped.json`. It is maintained by an automated workflow, which merges each update itself once the frontend checks pass, and is overwritten on each synchronisation.
 
 ## Release Process
 
-Contributors do not need to take any action to release a change. When a maintainer approves and merges a pull request into `dev`, the release workflow opens a release pull request from `dev` to `main` and enables auto-merge on it. As soon as the checks on `dev` pass, the release pull request merges itself and the change is deployed to production. No second approval is required, because every change on `dev` has already been reviewed and approved. Release notes and version tags are published by the maintainers on the [Releases](https://github.com/leshvinsk/free-stop/releases) page.
+Contributors do not need to take any action to release a change.
+
+1. When a maintainer approves and merges a pull request into `dev`, its linked issue closes.
+2. The release workflow opens a release pull request from `dev` to `main` and enables auto-merge on it. As soon as the checks on `dev` pass, the release pull request merges itself and the change is deployed to production. No second approval is required, because every change on `dev` has already been reviewed and approved.
+3. Shortly after midnight Malaysia time (UTC+8), every change that reached `main` that day is published as one versioned release on the [Releases](https://github.com/leshvinsk/free-stop/releases) page, with notes grouped by type and linked to each pull request.
+
+The version is bumped from the pull request titles of the day: a major version for a breaking change marked with `!`, a minor version when there is at least one `feat`, and a patch version otherwise. A day with no changes produces no release.
 
 ## Getting Help
 
