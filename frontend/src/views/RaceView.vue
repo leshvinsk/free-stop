@@ -15,6 +15,7 @@ import type {
   CircuitMap as Circuit,
   FlagStatus,
   RaceDetail,
+  RaceDriverResult,
   RaceWeather as Weather,
 } from '@/types/api'
 import type { TowerRow } from '@/types/ui'
@@ -102,25 +103,43 @@ const rows = computed<TowerRow[]>(() => {
   }))
 })
 
-// Pit crews ranked by time won or lost in the pit lane against a normal stop
-const crewRows = computed<TowerRow[]>(() =>
-  (race.value?.drivers ?? [])
+// Why a driver has no crew time, from the backend's note on their unmeasured stops
+function untimedReason(d: RaceDriverResult): string {
+  if (!d.stops.length) return d.outcome ? `${d.outcome} · no stops` : 'No stops'
+  const notes = d.stops.map((s) => s.note?.toLowerCase() ?? '')
+  if (notes.some((n) => n.includes('red flag'))) return 'Red flag stop'
+  if (notes.some((n) => n.includes('drove through'))) return 'Drove through'
+  if (notes.some((n) => n.includes('abnormal'))) return 'Abnormal stop'
+  if (notes.some((n) => n.includes('penalty'))) return 'Penalty only'
+  return 'Not timed'
+}
+
+// Every driver, crews ranked by time won or lost in the pit lane against a normal stop,
+// then the drivers with no normal stop to time and the reason why
+const crewRows = computed<TowerRow[]>(() => {
+  const drivers = race.value?.drivers ?? []
+  const timed = drivers
     .filter((d) => d.race_execution !== null)
     .sort((a, b) => (b.race_execution ?? 0) - (a.race_execution ?? 0))
-    .map((d) => ({
-      key: d.driver_number,
-      code: d.name_acronym,
-      title: d.team_name,
-      subtitle: formatFullName(d.full_name),
-      colour: teamColour(d.team_colour),
-      team: d.team_name,
-      teamTo: { name: 'team', params: { teamKey: d.team_key }, query: { year: year.value } },
-      tag: d.stops.length
-        ? `${Math.min(...d.stops.map((s) => s.pit_duration)).toFixed(3)}s`
-        : undefined,
-      luck: d.race_execution,
-    })),
-)
+  const untimed = drivers.filter((d) => d.race_execution === null)
+  return [...timed, ...untimed].map((d) => ({
+    key: d.driver_number,
+    code: d.name_acronym,
+    title: d.team_name,
+    subtitle: d.outcome
+      ? `${formatFullName(d.full_name)} · ${d.outcome}`
+      : formatFullName(d.full_name),
+    colour: teamColour(d.team_colour),
+    team: d.team_name,
+    teamTo: { name: 'team', params: { teamKey: d.team_key }, query: { year: year.value } },
+    tag: d.stops.length
+      ? `${Math.min(...d.stops.map((s) => s.pit_duration)).toFixed(3)}s`
+      : undefined,
+    luck: d.race_execution,
+    note: d.race_execution === null ? 'N/A' : undefined,
+    barNote: d.race_execution === null ? untimedReason(d) : undefined,
+  }))
+})
 </script>
 
 <template>
@@ -253,7 +272,8 @@ const crewRows = computed<TowerRow[]>(() =>
           <h2 class="section__title">Pit crew execution</h2>
           <p class="section__lede">
             Time won or lost per driver against the race's normal stop. Penalties are excluded. Best
-            stop shows the crew's fastest single pit lane time.
+            stop shows the crew's fastest single pit lane time. Drivers with no normal stop to time
+            are listed last with the reason.
           </p>
           <TimingTower
             :rows="crewRows"

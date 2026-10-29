@@ -90,8 +90,8 @@ const rows = computed<TowerRow[]>(() =>
     code: `R${String(r.round).padStart(2, '0')}`,
     title: r.race_name,
     subtitle: `${r.circuit} · ${formatDate(r.date)}`,
-    // No crew time to judge after a retirement, or when the only stops were made under a red flag
-    tag: r.outcome || r.race_execution === null ? '—' : formatLuck(r.race_execution),
+    // No normal stop to time, such as no stops at all or only a tyre change under a red flag
+    tag: r.race_execution === null ? '—' : formatLuck(r.race_execution),
     colour: colour.value,
     team: driver.value?.team_name,
     teamTo: driver.value
