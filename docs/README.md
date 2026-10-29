@@ -54,7 +54,7 @@ Pit crew performance is measured separately from timing. The speed of the stop i
 
 - Race by race breakdown of timing benefit and crew execution across the season
 - Cumulative season chart
-- Clear handling of retirements, non starts and disqualifications, which are excluded from scoring
+- Clear handling of retirements, non starts and disqualifications, which are excluded from timing scores while their completed stops still count for the crew
 
 ### Team Analysis
 
@@ -109,7 +109,7 @@ Subtracting the field average ensures that only relative advantage is measured. 
 
 ### Crew Execution
 
-Crew execution is calculated independently as the difference between a stop's pit lane time and the normal pit lane time for that race. Served penalties are excluded, so crews are not penalised for time they were required to wait.
+Crew execution is calculated independently as the difference between a stop's pit lane time and the normal pit lane time for that race. Served penalties are excluded, so crews are not penalised for time they were required to wait. Stops completed before a retirement or disqualification still count, because the crew performed them as normal. A stop with no normal pit lane time to compare, such as a tyre change under a red flag, a drive through the pit lane behind the safety car or a repair, has no crew score, and the race page lists the reason.
 
 ## Technology Stack
 
