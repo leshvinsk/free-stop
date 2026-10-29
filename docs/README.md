@@ -107,6 +107,12 @@ race_score = sum(stop_benefit) - field_average
 
 Subtracting the field average ensures that only relative advantage is measured. If every driver benefited equally from a safety car, no driver gains a score from it.
 
+### Accuracy
+
+The inputs are official timing data, accurate to the millisecond, but the cost of each stop is an estimate. It compares a driver's in-lap and out-lap with the pace of the rest of the field at that moment, so traffic, tyre condition and fuel load can move it by fractions of a second. There is no official measure of pit stop luck to validate against, so the scores are the best estimate the timing data allows.
+
+Large differences, such as a stop under a safety car against a stop in normal racing, are worth ten seconds or more and are measured reliably. Drivers a few tenths of a second per race apart should be read as level. Early in a season a single safety car can move a driver's average by a couple of seconds, which is why the luckiest and unluckiest drivers must have been scored in at least a third of the rounds, and at least three.
+
 ### Crew Execution
 
 Crew execution is calculated independently as the difference between a stop's pit lane time and the normal pit lane time for that race. Served penalties are excluded, so crews are not penalised for time they were required to wait. Stops completed before a retirement or disqualification still count, because the crew performed them as normal. A stop with no normal pit lane time to compare, such as a tyre change under a red flag, a drive through the pit lane behind the safety car or a repair, has no crew score, and the race page lists the reason.

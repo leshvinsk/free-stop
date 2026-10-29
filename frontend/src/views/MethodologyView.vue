@@ -100,6 +100,14 @@ const labels = [
 
 const limits = [
   [
+    'Estimates, not stopwatches',
+    "A stop's cost compares the driver's in-lap and out-lap with the rest of the field's pace at that moment. Traffic, fresh tyres and fuel load move that by fractions of a second, sometimes more. There is no official luck figure to check against, so the scores are the best estimate the timing data allows.",
+  ],
+  [
+    'Close gaps are ties',
+    "Drivers a few tenths of a second per race apart are effectively level. A gap of a second or more per race is meaningful. Early in a season one safety car can move a driver's average by a couple of seconds, which is why the luckiest and unluckiest need a third of the season to qualify.",
+  ],
+  [
     'Strategy is not luck',
     'A brilliant early stop still scores neutral. We only measure timing against safety cars, VSCs and red flags.',
   ],
@@ -194,7 +202,8 @@ const limits = [
         </div>
       </div>
       <p class="note muted">
-        Times are shown to the thousandth of a second, exactly as calculated. Nothing is rounded.
+        Times are shown to the thousandth of a second, exactly as calculated. Nothing is rounded,
+        but that is the precision of the arithmetic, not of the estimate. See Known limitations.
       </p>
     </section>
 
