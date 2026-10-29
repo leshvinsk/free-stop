@@ -100,7 +100,7 @@ Some of what keeps Free Stop running lives outside the repository: repository se
 The `free-stop-data-sync` GitHub App is the identity the team data sync and the daily release act as. It is the only bot allowed to bypass review on `dev`, and the only bot allowed to create release tags.
 
 1. Create it from the maintainer's account under **Settings, Developer settings, GitHub Apps, New GitHub App**, with the repository as its homepage, the **Webhook** turned off, and installation limited to this account.
-2. Grant only these repository permissions: **Contents** read and write, **Pull requests** read and write, **Commit statuses** read and write, and **Metadata** read-only.
+2. Grant only these repository permissions: **Contents** read and write, **Pull requests** read and write, **Commit statuses** read and write, **Workflows** read and write, and **Metadata** read-only. GitHub refuses to create a release on a commit that changes `.github/workflows/` without the Workflows permission. After changing an existing App's permissions, accept them on the installation under **Settings, Applications, Installed GitHub Apps, Configure**.
 3. Install it on this repository only.
 4. Under **Credentials, Key pairs**, create a key. Save the downloaded `.pem` file's full contents as the repository secret `DATA_SYNC_APP_PRIVATE_KEY`, then delete the file.
 5. Save the App's **Client ID** as the repository variable `DATA_SYNC_APP_CLIENT_ID`. It is not secret.
