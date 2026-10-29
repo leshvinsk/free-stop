@@ -32,6 +32,12 @@ services:
       - path: /*
         name: Cache-Control
         value: public, max-age=300
+    # Page addresses such as /race/9947 only exist inside the Vue app, so any path without a
+    # matching file serves index.html and the app's router shows the right page
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
     envVars:
       - key: VITE_API_BASE_URL
         value: https://free-stop-api.onrender.com
