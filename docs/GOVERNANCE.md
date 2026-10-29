@@ -17,7 +17,7 @@ This document describes how the Free Stop project is organised, who is responsib
 
 - **Transparency.** Decisions are discussed and recorded in public issues, pull requests and discussions.
 - **Accuracy.** Free Stop publishes verified data and reproducible scores. Accuracy takes priority over speed.
-- **Review.** No change reaches production without review and passing checks.
+- **Review.** No change reaches production without review and passing checks. The one exception is the automated team data update, which merges itself only when the frontend checks pass with the new data.
 - **Openness.** Anyone may contribute, and responsibility is extended to contributors who demonstrate sustained, constructive participation.
 
 ## Roles and Responsibilities
@@ -36,6 +36,7 @@ The current maintainer is [@leshvinsk](https://github.com/leshvinsk).
 | Target branch | Accepted source | Required checks | Required approvals | Merge method | Merged by |
 |---|---|---|---|---|---|
 | `dev` | Contributor branches named `<type>/<issue>-<description>` | Backend checks, Frontend checks, PR policy | One code owner approval | Squash merge | Maintainer |
+| `dev` | `bot/sync-team-data`, opened by the `free-stop-data-sync` App | Frontend checks run against the new data | None | Squash merge | The `free-stop-data-sync` App |
 | `main` | `dev` only | Backend checks, Frontend checks | None, as every change was approved on `dev` | Merge commit | Automated release workflow |
 
 Additional rules for both branches:
@@ -44,7 +45,8 @@ Additional rules for both branches:
 - Pull requests into `dev` must be rebased on the latest `dev` and must not contain merge commits.
 - Approvals are dismissed when new commits are pushed.
 - All review conversations must be resolved before merging.
-- Release tags matching `v*` may be created, moved or deleted by maintainers only.
+- Release tags matching `v*` may be created, moved or deleted by maintainers only. The `free-stop-data-sync` App may also bypass this rule, and the daily release workflow uses it only to create new tags.
+- The `free-stop-data-sync` App is the only bot that may bypass review on `dev`, and only through a pull request. Its private key is held as a repository secret and is never shared with other workflows.
 
 ## Decision Making
 
@@ -54,13 +56,13 @@ Significant decisions, such as changes to the scoring methodology, the addition 
 
 ## Release Management
 
-1. Approved pull requests are squash merged into `dev`.
+1. Approved pull requests are squash merged into `dev`, which closes their linked issues.
 2. The release workflow opens a release pull request from `dev` to `main`, listing every included change, and enables auto-merge on it.
 3. Once the checks on `dev` pass, the release pull request merges itself with a merge commit. The maintainer may close or pause it at any time to hold a release.
-4. Merging into `main` deploys the release to production.
-5. The maintainer publishes release notes and a version tag on the [Releases](https://github.com/leshvinsk/free-stop/releases) page.
+4. Merging into `main` deploys the change to production.
+5. At 00:05 Malaysia time (UTC+8), the daily release workflow publishes everything that reached `main` the previous day as one release and version tag on the [Releases](https://github.com/leshvinsk/free-stop/releases) page. Days without changes produce no release, and a missed run is caught up on the next one.
 
-Versions follow [Semantic Versioning](https://semver.org). A major version marks a change in the scoring methodology that alters published figures, a minor version adds functionality or seasons, and a patch version contains fixes and data corrections.
+Versions follow [Semantic Versioning](https://semver.org). A major version marks a change in the scoring methodology that alters published figures, a minor version adds functionality or seasons, and a patch version contains fixes and data corrections. The daily release reads the bump from the day's pull request titles: a `!` after the type is a major version, a `feat` is a minor version, and anything else is a patch. Reviewers must therefore make sure that a pull request which alters published figures carries a `!` before it is merged. The maintainer can override the bump, or release a single day, from the **Daily release** workflow's **Run workflow** button.
 
 ## Becoming a Triager or Reviewer
 
@@ -74,7 +76,7 @@ Invitations are extended by the maintainer. A role may be withdrawn after an ext
 
 ## Code Ownership
 
-Code ownership is defined in `.github/CODEOWNERS`. A code owner must approve every pull request into `dev` and `main`. As additional reviewers are appointed, ownership of specific areas, such as the backend scoring pipeline or the frontend, may be delegated to them.
+Code ownership is defined in `.github/CODEOWNERS`. A code owner must approve every pull request into `dev`, apart from the automated team data updates described above. Release pull requests into `main` need no further approval, because every change they contain was approved on `dev`. As additional reviewers are appointed, ownership of specific areas, such as the backend scoring pipeline or the frontend, may be delegated to them.
 
 ## Changes to This Document
 

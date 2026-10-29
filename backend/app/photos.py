@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 COMMONS_API = "https://commons.wikimedia.org/w/api.php"
 # Wikimedia's robot policy rejects API clients whose User-Agent has no contact details.
-CONTACT = os.getenv("WIKIMEDIA_CONTACT", "leshvinsk@icloud.com")
+CONTACT = os.getenv("WIKIMEDIA_CONTACT", "leshvinsk@gmail.com")
 HEADERS = {"User-Agent": f"FreeStop/1.0 ({CONTACT}) httpx/{httpx.__version__}"}
 MAX_PHOTOS = 8
 MAX_SUBCATEGORIES = 4

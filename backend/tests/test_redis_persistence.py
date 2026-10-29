@@ -102,5 +102,5 @@ def test_a_finished_calendar_round_trips(fake: FakeRedis) -> None:
 
 
 def test_an_unreadable_entry_is_ignored(fake: FakeRedis) -> None:
-    redis_cache.save_text(f"fs:extra:weather:{store._EXTRAS_VERSION}:9947", "not json")
+    redis_cache.save_text(f"fs:extra:weather:{store._EXTRA_VERSIONS['weather']}:9947", "not json")
     assert store._load_extra("weather", 9947) is None

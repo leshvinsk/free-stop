@@ -47,7 +47,7 @@ _PU_MAKERS = [
 
 _BASE_URL = "https://www.formula1.com/en/teams"
 _HEADERS = {
-    "User-Agent": "FreeStop/1.0 (leshvinsk@icloud.com)",
+    "User-Agent": "FreeStop/1.0 (leshvinsk@gmail.com)",
     "Accept": "text/html,application/xhtml+xml",
     "Accept-Language": "en-US,en;q=0.9",
 }
