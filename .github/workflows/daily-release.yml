@@ -1,0 +1,63 @@
+name: Daily release
+
+on:
+  schedule:
+    - cron: '5 16 * * *'  # 00:05 Malaysia time (UTC+8), just after each day's window closes
+  workflow_dispatch:
+    inputs:
+      date:
+        description: Release only this Malaysia-time day (YYYY-MM-DD). Leave empty to catch up on every day since the latest release.
+        required: false
+        default: ''
+      bump:
+        description: Version bump for a single-day release. auto reads the Conventional Commit types.
+        type: choice
+        options: [auto, patch, minor, major]
+        default: auto
+      dry_run:
+        description: Show the release notes without publishing anything
+        type: boolean
+        default: false
+
+permissions: {}
+
+concurrency:
+  group: daily-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Publish the day's release
+    runs-on: ubuntu-latest
+    # Release tags are protected; the free-stop-data-sync App is the only bot allowed to create
+    # them, so GITHUB_TOKEN only needs to read the repository
+    permissions:
+      contents: read
+
+    steps:
+      - name: Create the release App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.DATA_SYNC_APP_CLIENT_ID }}
+          private-key: ${{ secrets.DATA_SYNC_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Publish releases
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          REPO: ${{ github.repository }}
+          RELEASE_DATE: ${{ inputs.date }}
+          BUMP: ${{ inputs.bump }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: python .github/scripts/daily_release.py

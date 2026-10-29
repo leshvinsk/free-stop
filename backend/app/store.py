@@ -50,7 +50,12 @@ def _fingerprint(*paths: Path) -> str:
 
 
 _SCHEMAS = _APP / "openf1" / "schemas.py"
-_EXTRAS_VERSION = _fingerprint(_APP / "extras.py", _APP / "photos.py", _APP / "models.py", _SCHEMAS)
+# Per kind, so changing the photo lookup doesn't throw away the slow-to-build circuit maps
+_EXTRA_VERSIONS = {
+    "circuit": _fingerprint(_APP / "extras.py", _APP / "models.py", _SCHEMAS),
+    "weather": _fingerprint(_APP / "extras.py", _APP / "models.py", _SCHEMAS),
+    "photos": _fingerprint(_APP / "photos.py", _APP / "models.py"),
+}
 _CALENDAR_VERSION = _fingerprint(_SCHEMAS)
 _EXTRA_MODELS: dict[str, type[BaseModel]] = {
     "circuit": CircuitMap,
@@ -70,7 +75,7 @@ def _season_over(year: int) -> bool:
 
 
 def _load_extra(kind: str, session_key: int) -> BaseModel | None:
-    text = redis_cache.load_text(f"fs:extra:{kind}:{_EXTRAS_VERSION}:{session_key}")
+    text = redis_cache.load_text(f"fs:extra:{kind}:{_EXTRA_VERSIONS[kind]}:{session_key}")
     if text is None:
         return None
     try:
@@ -84,7 +89,7 @@ def _save_extra(kind: str, session_key: int, value: object) -> None:
     if not isinstance(value, BaseModel) or (isinstance(value, RacePhotos) and not value.photos):
         return
     redis_cache.save_text(
-        f"fs:extra:{kind}:{_EXTRAS_VERSION}:{session_key}", value.model_dump_json()
+        f"fs:extra:{kind}:{_EXTRA_VERSIONS[kind]}:{session_key}", value.model_dump_json()
     )
 
 

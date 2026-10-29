@@ -3,7 +3,7 @@ services:
     name: free-stop-api
     runtime: python
     region: frankfurt
-    # dev is the default branch; only reviewed releases on main are deployed
+    # Only reviewed releases on main are deployed
     branch: main
     buildCommand: pip install -e .
     startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT

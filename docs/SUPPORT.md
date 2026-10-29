@@ -32,7 +32,7 @@ Please review the following resources first, as they answer most common question
 | Inaccurate Formula 1 data | [Data correction](https://github.com/leshvinsk/free-stop/issues/new/choose) |
 | A concrete feature proposal | [Feature request](https://github.com/leshvinsk/free-stop/issues/new/choose) |
 | A security vulnerability | [Private security advisory](https://github.com/leshvinsk/free-stop/security/advisories/new), as described in [SECURITY.md](SECURITY.md) |
-| A Code of Conduct concern | **leshvinsk@icloud.com**, as described in [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) |
+| A Code of Conduct concern | **leshvinsk@gmail.com**, as described in [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) |
 
 ## Response Expectations
 

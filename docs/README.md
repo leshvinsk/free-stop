@@ -46,7 +46,7 @@ Pit crew performance is measured separately from timing. The speed of the stop i
 
 - Ranking of every driver by pit stop timing benefit for the selected race
 - Stop conditions shown for each driver, separated into safety car, virtual safety car, red flag and green flag stops
-- Pit crew execution ranking based on time gained or lost against the normal stop for that race
+- Pit crew execution ranking based on time gained or lost against the normal stop for that race, listing every driver and the reason when a stop could not be timed
 - Race timeline showing neutralisation periods alongside each pit stop
 - Circuit map, weather summary and headline race statistics
 
@@ -67,6 +67,7 @@ Pit crew performance is measured separately from timing. The speed of the stop i
 
 - Full season ranking of all drivers
 - Ranking by average time saved per race
+- Luckiest and unluckiest drivers named from those scored in at least a third of the rounds, and at least three
 
 ### Methodology Guide
 
@@ -125,8 +126,9 @@ Crew execution is calculated independently as the difference between a stop's pi
 | Data access | httpx, Tenacity for retry and backoff |
 | Validation | Pydantic v2 |
 | Frontend | Vue 3, TypeScript, Vite |
-| Caching | Upstash Redis as the primary store, local disk as the fallback |
-| Hosting | Render |
+| Caching | Upstash Redis in Frankfurt as the primary store, local disk as the fallback |
+| Hosting | Render, with the API in Frankfurt and the frontend on Render's global CDN |
+| Monitoring | UptimeRobot health checks every 5 minutes |
 | Continuous integration | GitHub Actions |
 | Code quality | Ruff, mypy, ESLint, Prettier |
 | Testing | pytest, Vitest |
@@ -143,15 +145,17 @@ Vue 3 frontend (Render static site)
    v
 FastAPI backend (Render web service)
    |
-   +--> Redis score cache --> cached result returned
+   +--> in-memory cache --> result returned
    |
-   +--> OpenF1 API --> laps, pit stops, race control
+   +--> Upstash Redis --> scores, circuit maps, weather, photos and calendars
+   |
+   +--> OpenF1 API, Wikimedia Commons --> laps, pit stops, race control, photos
               |
               v
         Scoring pipeline --> result cached and returned
 ```
 
-Completed races are scored once and cached. Races that finished recently are refreshed until OpenF1 has published complete data.
+Each request is answered from the process's own memory when possible, then from Upstash Redis, and only then rebuilt from OpenF1. Completed races are scored once and kept in Redis, so a restart or deployment does not send visitors back to OpenF1. Races that finished recently are refreshed until OpenF1 has published complete data.
 
 ## Project Structure
 
@@ -164,18 +168,20 @@ free-stop/
 │   │   ├── release-pr.yml           # Promotes approved changes from dev to main
 │   │   ├── link-issue.yml           # Fills in the Closes reference from the branch name
 │   │   ├── close-issues.yml         # Closes linked issues when a pull request merges into dev
+│   │   ├── daily-release.yml        # Publishes a GitHub release for each day's changes
 │   │   ├── sync-teams.yml           # Team data synchronisation from formula1.com
-│   │   └── keep-warm.yml            # Health check that prevents idle spin down
+│   │   └── keep-warm.yml            # Backup health check that prevents idle spin down
 │   ├── ISSUE_TEMPLATE/              # Bug report, data correction and feature request forms
 │   ├── DISCUSSION_TEMPLATE/         # Ideas form
 │   ├── rulesets/                    # Branch and tag protection definitions
 │   ├── scripts/
-│   │   └── sync-with-dev.sh         # Stash, fetch, rebase onto dev, stash pop
+│   │   ├── sync-with-dev.sh         # Stash, fetch, rebase onto dev, stash pop
+│   │   └── daily_release.py         # Builds each day's release notes and version
 │   ├── CODEOWNERS
 │   ├── dependabot.yml
 │   └── pull_request_template.md
 ├── applications/
-│   ├── render.yaml                  # Render Blueprint for the API, UI and Redis
+│   ├── render.yaml                  # Render Blueprint for the API and the frontend
 │   └── .pre-commit-config.yaml      # Optional local formatting hooks
 ├── backend/
 │   ├── main.py                      # FastAPI application entry point
@@ -225,11 +231,12 @@ free-stop/
 
 ### Installation
 
-Clone the repository. The default branch is `dev`, which contains the latest reviewed changes.
+Clone the repository and switch to `dev`, which contains the latest reviewed changes. The repository's default branch is `main`, which always matches production.
 
 ```bash
 git clone https://github.com/leshvinsk/free-stop.git
 cd free-stop
+git checkout dev
 ```
 
 Install the backend dependencies:
@@ -317,7 +324,7 @@ Free Stop uses two long lived branches.
 
 | Branch | Purpose | Receives changes from | Merge method |
 |---|---|---|---|
-| `dev` | Integration branch and default branch | Contributor branches, one per issue | Squash merge |
+| `dev` | Integration branch | Contributor branches, one per issue | Squash merge |
 | `main` | Production branch, deployed to the live site | `dev` only | Merge commit |
 
 ```text
@@ -335,18 +342,36 @@ dev
 main  -->  deployed to production
 ```
 
-Every change starts as an issue, is developed on its own branch, and is reviewed in a pull request against `dev`. Once a maintainer approves and merges a pull request into `dev`, a release pull request from `dev` to `main` is opened automatically and merges itself as soon as the checks pass, which deploys the change. The complete process is described in [CONTRIBUTING.md](CONTRIBUTING.md) and the approval rules in [GOVERNANCE.md](GOVERNANCE.md).
+Every change starts as an issue, is developed on its own branch, and is reviewed in a pull request against `dev`. Once a maintainer approves and merges a pull request into `dev`, its linked issue closes, and a release pull request from `dev` to `main` is opened automatically and merges itself as soon as the checks pass, which deploys the change. The complete process is described in [CONTRIBUTING.md](CONTRIBUTING.md) and the approval rules in [GOVERNANCE.md](GOVERNANCE.md).
+
+### Releases
+
+Every change that reaches `main` during a day, from 00:00 to 23:59 Malaysia time (UTC+8), is published as one release on the [Releases](https://github.com/leshvinsk/free-stop/releases) page shortly after midnight. Days with no changes produce no release, and changes made after midnight belong to the next day's release.
+
+| Changes in the day | Version bump | Example |
+|---|---|---|
+| A breaking change, marked `type!:` or with a `BREAKING CHANGE` footer | Major | `v1.4.2` to `v2.0.0` |
+| At least one `feat` | Minor | `v1.4.2` to `v1.5.0` |
+| Fixes, data, documentation and maintenance only | Patch | `v1.4.2` to `v1.4.3` |
+
+The release notes group the day's changes into features, fixes, performance, data, documentation and maintenance, each linked to its pull request. If a scheduled run is missed, the next run releases every outstanding day in order. A maintainer can also release a single day, preview the notes without publishing, or override the version bump from the **Daily release** workflow's **Run workflow** button.
 
 ## Deployment
 
-`applications/render.yaml` is a Render Blueprint that defines both production services. The cache is an Upstash Redis database in Frankfurt, which keeps its data across restarts.
+`applications/render.yaml` is a Render Blueprint that defines both production services.
 
-| Service | Type | Purpose |
-|---|---|---|
-| `free-stop-api` | Python web service | FastAPI backend |
-| `free-stop-ui` | Static site | Vue 3 frontend |
+| Service | Provider | Region | Purpose |
+|---|---|---|---|
+| `free-stop-api` | Render, Python web service | Frankfurt | FastAPI backend |
+| `free-stop-ui` | Render, static site | Global CDN | Vue 3 frontend |
+| Score cache | Upstash Redis | Frankfurt | Scores, circuit maps, weather, photos and calendars that survive restarts |
+| Uptime monitor | UptimeRobot | Global | Requests `/health` every 5 minutes so the API never idles, and alerts the maintainer if it goes down |
 
-When the Blueprint is created in Render, its path must be set to `applications/render.yaml`. Both web services deploy from `main` only, so changes reach production only through an approved pull request into `dev` followed by the automated release.
+When the Blueprint is created in Render, its path must be set to `applications/render.yaml`. Both services deploy from `main` only, so changes reach production only through an approved pull request into `dev` followed by the automated release.
+
+The frontend's page addresses, such as `/race/9947`, exist only inside the Vue router. The Blueprint therefore rewrites any path without a matching file to `index.html`, so reloading or sharing a page works.
+
+The Redis connection string is entered in the Render dashboard as `REDIS_URL` rather than in the Blueprint, because it contains the password. The API connects as a restricted Redis user that may only read and write keys starting with `fs:`, using the `PING`, `GET`, `GETEX` and `SETEX` commands. Any new Redis command the backend needs must also be granted to that user.
 
 ## Automated Workflows
 
@@ -355,10 +380,11 @@ When the Blueprint is created in Render, its path must be set to `applications/r
 | CI | Every pull request into `dev`, and pushes to `dev` and `main` | Runs all backend and frontend checks |
 | PR policy | Every pull request into `dev`, except the data sync's | Verifies the target branch, branch name, title format, and that the branch is rebased on the latest `dev` |
 | Release to main | Every change to `dev` | Opens the release pull request from `dev` to `main` and merges it automatically once checks pass |
+| Daily release | Daily at 00:05 Malaysia time | Publishes the previous day's changes on `main` as a versioned GitHub release |
 | Link issue | Every pull request into `dev` | Fills in `Closes #<issue>` from the issue number in the branch name |
 | Close linked issues | Every change to `dev` | Closes the issues named by `Closes #<issue>` in each merged pull request |
 | Sync team data | Daily at 06:00 UTC, and hourly from Thursday to Sunday | Opens and merges a pull request when formula1.com team data changes and the frontend checks pass |
-| Keep warm | Every 10 minutes | Prevents the hosted API from idling |
+| Keep warm | Every 10 minutes | Backup to UptimeRobot that prevents the hosted API from idling |
 | Dependabot | Weekly on Monday | Opens grouped dependency updates against `dev` |
 
 ### Team Data Synchronisation
@@ -369,7 +395,7 @@ If fewer than eight of the eleven teams can be read, no data is written and the 
 
 ### Keep Warm
 
-Render's free tier stops a service after 15 minutes without traffic. The keep warm workflow requests the health endpoint every 10 minutes, which leaves a margin of 5 minutes for scheduling delays.
+Render's free tier stops a service after 15 minutes without traffic, and the first visitor afterwards waits about 30 seconds while it starts again. UptimeRobot requests the health endpoint every 5 minutes, which keeps the API awake. The keep warm workflow requests it every 10 minutes as a backup, since GitHub can delay scheduled workflows.
 
 ## Data Sources
 
@@ -379,10 +405,11 @@ Render's free tier stops a service after 15 minutes without traffic. The keep wa
 | [formula1.com](https://www.formula1.com/en/teams) | Team principals, chassis, power units, team bases and first entry years |
 | Formula 1 media service | Driver portraits, team logos, car images and circuit outlines |
 | [Jolpica](https://jolpica.com) | Driver nationalities |
+| [Wikimedia Commons](https://commons.wikimedia.org) | Race weekend photographs, with author and licence attribution |
 
 ## Operational Notes
 
-- `REDIS_URL` is optional. If Redis is unavailable, the backend continues to operate using the disk cache.
+- `REDIS_URL` is optional, and local development does not need it. If Redis is unavailable, the backend continues to operate using the disk cache.
 - Completed races are cached permanently. Races within 24 hours of their finish are refreshed until OpenF1 data is complete.
 - The disk cache on Render is cleared on each deployment, whereas Upstash Redis keeps scores, circuit maps, weather and photos for finished races, and the calendars of finished seasons, across deployments and restarts. Each process checks its own memory first, so Redis is only read after a restart.
 - Redis keys carry a fingerprint of the code that builds them, so a code change rebuilds them. Every read pushes a key's expiry back 60 days, so entries in use never expire and entries from older code expire on their own. This needs the `GETEX` command on the Redis user; without it, reads still work and keys expire 60 days after they were written.
@@ -390,7 +417,8 @@ Render's free tier stops a service after 15 minutes without traffic. The keep wa
 - If Redis cannot be reached, the backend retries the connection every 60 seconds.
 - Branch protection is defined in `.github/rulesets/` and applied through the repository settings.
 - The release workflow requires the repository setting that allows GitHub Actions to create and approve pull requests.
-- The synchronisation workflow acts as the `free-stop-data-sync` GitHub App, the only actor allowed to bypass review on `dev`. It needs the `DATA_SYNC_APP_CLIENT_ID` repository variable and the `DATA_SYNC_APP_PRIVATE_KEY` repository secret.
+- The synchronisation and daily release workflows act as the `free-stop-data-sync` GitHub App. It is the only bot allowed to bypass review on `dev`, for data pull requests only, and the only bot allowed to create `v*` release tags. Both workflows need the `DATA_SYNC_APP_CLIENT_ID` repository variable and the `DATA_SYNC_APP_PRIVATE_KEY` repository secret.
+- Pull requests merged into `dev` close the issues named by their `Closes #<issue>` line. GitHub only does this itself for the default branch, `main`, and ignores the release pull request because a workflow merges it, so the Close linked issues workflow does it instead.
 
 ## Contributing
 
