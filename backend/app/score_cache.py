@@ -31,7 +31,7 @@ _SOURCES = sorted(
 VERSION = hashlib.sha256(b"".join(p.read_bytes() for p in _SOURCES)).hexdigest()[:12]
 DIR = CACHE_DIR / "scores"
 
-_NS = f"fs:score:{VERSION}"  # Redis key namespace; old VERSIONs expire after 30 days
+_NS = f"fs:score:{VERSION}"  # Redis key namespace; unread old VERSIONs expire on their own
 
 
 def _redis_key(session_key: int) -> str:

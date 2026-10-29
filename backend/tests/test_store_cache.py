@@ -69,11 +69,13 @@ def test_a_restart_uses_the_saved_score_without_rescoring() -> None:
 
 
 def test_a_stale_calendar_is_served_while_it_refreshes() -> None:
+    year = datetime.now(UTC).year  # only the current season's calendar changes
+
     async def run() -> None:
         async with httpx.AsyncClient() as http:
             store = ScoreStore(http)
             old = [_session()]
-            store._calendars[2025] = (time.monotonic() - SESSIONS_TTL - 1, old)
+            store._calendars[year] = (time.monotonic() - SESSIONS_TTL - 1, old)
             refreshed = asyncio.Event()
 
             async def slow_load(year: int) -> list[Session]:
@@ -82,9 +84,23 @@ def test_a_stale_calendar_is_served_while_it_refreshes() -> None:
 
             store._load_calendar = slow_load  # type: ignore[method-assign]
             # Returns at once with the cached calendar rather than waiting on the refresh
-            assert await asyncio.wait_for(store.sessions(2025), timeout=1) == old
-            assert 2025 in store._calendar_refresh
+            assert await asyncio.wait_for(store.sessions(year), timeout=1) == old
+            assert year in store._calendar_refresh
             refreshed.set()
             await asyncio.sleep(0)
+
+    asyncio.run(run())
+
+
+def test_a_finished_seasons_calendar_is_never_refreshed() -> None:
+    year = datetime.now(UTC).year - 1
+
+    async def run() -> None:
+        async with httpx.AsyncClient() as http:
+            store = ScoreStore(http)
+            old = [_session()]
+            store._calendars[year] = (time.monotonic() - SESSIONS_TTL - 1, old)
+            assert await store.sessions(year) == old
+            assert year not in store._calendar_refresh
 
     asyncio.run(run())
