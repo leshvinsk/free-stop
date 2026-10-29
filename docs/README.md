@@ -333,7 +333,7 @@ Every change starts as an issue, is developed on its own branch, and is reviewed
 
 ## Deployment
 
-`applications/render.yaml` is a Render Blueprint that defines both production services. The score cache is an Upstash Redis database in Frankfurt, which keeps its data across restarts.
+`applications/render.yaml` is a Render Blueprint that defines both production services. The cache is an Upstash Redis database in Frankfurt, which keeps its data across restarts.
 
 | Service | Type | Purpose |
 |---|---|---|
@@ -378,7 +378,8 @@ Render's free tier stops a service after 15 minutes without traffic. The keep wa
 
 - `REDIS_URL` is optional. If Redis is unavailable, the backend continues to operate using the disk cache.
 - Completed races are cached permanently. Races within 24 hours of their finish are refreshed until OpenF1 data is complete.
-- The disk cache on Render is cleared on each deployment, whereas Upstash Redis retains scores across deployments and restarts.
+- The disk cache on Render is cleared on each deployment, whereas Upstash Redis keeps scores, circuit maps, weather and photos for finished races, and the calendars of finished seasons, across deployments and restarts. Each process checks its own memory first, so Redis is only read after a restart.
+- Redis keys carry a fingerprint of the code that builds them, so a code change rebuilds them. Every read pushes a key's expiry back 60 days, so entries in use never expire and entries from older code expire on their own. This needs the `GETEX` command on the Redis user; without it, reads still work and keys expire 60 days after they were written.
 - `REDIS_URL` is set in the Render dashboard, not in `render.yaml`, because it contains the Upstash password. It must use the `rediss://` scheme.
 - If Redis cannot be reached, the backend retries the connection every 60 seconds.
 - Branch protection is defined in `.github/rulesets/` and applied through the repository settings.
