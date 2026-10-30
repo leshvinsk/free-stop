@@ -6,7 +6,7 @@ const guide = [
     title: 'Start with the season',
     body: 'Every driver is ranked by the time their pit stop timing saved them per race. Green means the timing helped them, red means it cost them. It is an average, so a stand-in with a handful of races is compared fairly with a full-season driver.',
     points: [
-      'Luckiest and unluckiest need at least a third of the season (and three races) to qualify.',
+      'Luckiest and unluckiest need at least a third of the season (and three races) to qualify. Drivers with fewer are dimmed in the standings, with their race count against the number needed, for example "3 of 6 races".',
       'Pick 2024, 2025 or 2026 from the season switcher.',
     ],
   },
