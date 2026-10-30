@@ -42,8 +42,9 @@ const guide = [
 const steps = [
   {
     title: 'Measure what each stop really cost',
-    body: 'The pit lane takes just as long under a safety car. What changes is that rivals are crawling round behind it. So we time the lap into the pits and the lap out, and compare them with what the rest of the field did at the same moments, matched to the second.',
-    formula: 'time_lost = (in-lap + out-lap) − field pace over the same two laps',
+    body: "The pit lane takes just as long under a safety car. What changes is that rivals are crawling round behind it. So we time the lap into the pits and the lap out, and compare them with what the rest of the field did at the same moments, matched to the second. A slow car's laps are slower anyway, so each driver's usual gap to the field under green flags is allowed for: otherwise slow cars would look unlucky and fast cars lucky. Behind a safety car every car laps at the same speed, so the allowance only covers the green-flag part of the two laps.",
+    formula:
+      'time_lost = (in-lap + out-lap) − field pace over the same two laps\n            − ⅔ × usual gap to the field × green laps',
   },
   {
     title: 'Take the pit crew out of it',
@@ -101,7 +102,7 @@ const labels = [
 const limits = [
   [
     'Estimates, not stopwatches',
-    "A stop's cost compares the driver's in-lap and out-lap with the rest of the field's pace at that moment. Traffic, fresh tyres and fuel load move that by fractions of a second, sometimes more. There is no official luck figure to check against, so the scores are the best estimate the timing data allows.",
+    "A stop's cost compares the driver's in-lap and out-lap with the rest of the field's pace at that moment, allowing for how fast their car usually is. Only about two-thirds of that usual gap shows on pit laps, because the pit lane is speed-limited for everyone; the two-thirds is measured from every 2024-2026 race so that normal stops score the same whatever the car. Traffic, fresh tyres and fuel load still move a stop by fractions of a second, sometimes more. There is no official luck figure to check against, so the scores are the best estimate the timing data allows.",
   ],
   [
     'Close gaps are ties',

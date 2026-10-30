@@ -6,10 +6,15 @@ round behind the safety car meanwhile. So each stop is measured by how much time
 against the rest of the field, not by the pit-lane clock.
 
 For every stop:
-  time_loss   = (in-lap + out-lap) − field pace over the same two laps, where field pace is
-                the median clean lap of the other cars that started a lap closest in time
-                under the same race state. Matching on time means a safety car appearing
-                mid-lap slows the reference laps as much as it slows the stopping car.
+  time_loss   = (in-lap + out-lap) − field pace over the same two laps
+                − own pace × green share of the two laps
+                Field pace is the median clean lap of the other cars that started a lap closest
+                in time under the same race state. Matching on time means a safety car
+                appearing mid-lap slows the reference laps as much as it slows the stopping car.
+                Own pace is how much slower (+) or quicker (−) than the field the driver
+                usually laps under green flags, so a slow car's pit laps are not charged for
+                being slow and a fast car's are not credited for being fast. It only applies to
+                the green share of a lap: behind a safety car every car laps at the same speed.
   lane_excess = pit-lane time − the race's typical pit-lane time.
                 Crew speed, double-stack waits and served penalties all live here.
   adjusted    = max(0, time_loss − lane_excess)   (the cost had the pit lane gone normally;
@@ -50,6 +55,14 @@ REFERENCE_GAPS = (timedelta(seconds=60), timedelta(seconds=180), timedelta(secon
 MIN_BASELINE_STOPS = 3
 # A visit under the safety car this much quicker than a normal stop never stopped at all.
 PASS_THROUGH_MARGIN = 2.0
+# Green laps a driver needs before their own pace is used; with fewer it counts as the field's
+MIN_PACE_LAPS = 5
+# Other cars needed on the same lap for it to say anything about a driver's pace
+MIN_PACE_FIELD = 3
+# Share of a driver's usual pace gap that shows up on their in-lap and out-lap; the rest of
+# those laps is the speed-limited pit lane and cold tyres, where a fast car is no faster.
+# Calibrated so normal green-flag stops average the same luck whatever the car's speed
+OWN_PACE_WEIGHT = 2 / 3
 TRIM_PCT = 0.10
 
 LapIndex = dict[int, dict[int, Lap]]  # driver → lap number → lap
@@ -61,7 +74,7 @@ class ScoredStop:
     lap_number: int  # the in-lap
     pit_duration: float  # pit-lane time
     status: FlagStatus  # race state while the car was in the pit lane
-    time_loss: float | None  # seconds lost to the field over in-lap + out-lap
+    time_loss: float | None  # seconds lost to the field over in-lap + out-lap, car pace allowed for
     luck: float | None  # None when the stop can't be scored
     execution: float | None
     penalty: float  # seconds of penalty served at this stop
@@ -85,6 +98,7 @@ class RaceLuckResult:
     no_stops: bool
     insufficient_baseline_data: bool
     stops: list[ScoredStop]
+    own_pace: float | None = None  # usual green-flag gap to the field, s/lap (+ slower)
 
 
 @dataclass(frozen=True)
@@ -161,7 +175,8 @@ def analyse_race(
         _assign_missed(drafts, baseline, timeline, laps_by_driver)
 
     results = [
-        _result(dn, [d for d in drafts if d.driver == dn], baseline) for dn in driver_numbers
+        _result(dn, [d for d in drafts if d.driver == dn], baseline, field.own_pace(dn))
+        for dn in driver_numbers
     ]
     return RaceAnalysis(
         baseline=baseline,
@@ -269,6 +284,7 @@ class _Field:
         pitting: dict[int, set[int]] = defaultdict(set)
         for v in visits:
             pitting[v.driver].update(range(v.in_lap, v.out_lap + 1))
+        self._pitting = pitting
         # Clean laps: not lap 1, not an in- or out-lap. Tagged with how the race state ran
         # through the lap, so a green lap is never the reference for a safety-car lap, nor a
         # lap the safety car joined halfway for one spent wholly behind it.
@@ -281,6 +297,50 @@ class _Field:
             and lap.lap_number != 1
             and lap.lap_number not in pitting[driver]
         ]
+        self._own_pace = self._own_paces()
+
+    def _own_paces(self) -> dict[int, float]:
+        """Each driver's usual gap to the field under green flags: the median difference
+        between their clean green laps and the other cars' on the same lap, which share its
+        fuel load and track conditions."""
+        green = (FlagStatus.GREEN, FlagStatus.GREEN, FlagStatus.GREEN)
+        by_lap: dict[int, dict[int, float]] = defaultdict(dict)
+        for driver, laps in self.laps_by_driver.items():
+            for lap in laps.values():
+                if (
+                    lap.date_start is not None
+                    and lap.lap_duration is not None
+                    and lap.lap_number != 1
+                    and lap.lap_number not in self._pitting[driver]
+                    and self.lap_state(lap) == green
+                ):
+                    by_lap[lap.lap_number][driver] = lap.lap_duration
+        gaps: dict[int, list[float]] = defaultdict(list)
+        for times in by_lap.values():
+            for driver, duration in times.items():
+                others = [t for d, t in times.items() if d != driver]
+                if len(others) >= MIN_PACE_FIELD:
+                    gaps[driver].append(duration - statistics.median(others))
+        return {
+            driver: statistics.median(diffs)
+            for driver, diffs in gaps.items()
+            if len(diffs) >= MIN_PACE_LAPS
+        }
+
+    def own_pace(self, driver: int) -> float | None:
+        return self._own_pace.get(driver)
+
+    def green_share(self, lap: Lap) -> float:
+        """The fraction of the lap run under green flags."""
+        if lap.date_start is None or lap.date_end is None or lap.date_end <= lap.date_start:
+            return 1.0
+        start, end = lap.date_start, lap.date_end
+        neutralised = sum(
+            (min(end, p.end) - max(start, p.start)).total_seconds()
+            for p in self.timeline.periods
+            if p.start < end and p.end > start
+        )
+        return max(0.0, 1.0 - neutralised / (end - start).total_seconds())
 
     def lap_state(self, lap: Lap) -> LapState:
         """(state at the start, worst state during, state at the end)."""
@@ -309,6 +369,8 @@ class _Field:
         if in_pace is None or out_pace is None:
             return None
         loss = in_lap.lap_duration + out_lap.lap_duration - in_pace - out_pace
+        own_pace = self._own_pace.get(d.driver, 0.0)
+        loss -= OWN_PACE_WEIGHT * own_pace * (self.green_share(in_lap) + self.green_share(out_lap))
         return loss, in_lap.date_start, out_lap.date_end
 
     def pace(self, lap: Lap, exclude_driver: int) -> float | None:
@@ -483,7 +545,9 @@ def _scored(d: _Draft) -> ScoredStop:
     return stop
 
 
-def _result(driver_number: int, drafts: list[_Draft], baseline: float | None) -> RaceLuckResult:
+def _result(
+    driver_number: int, drafts: list[_Draft], baseline: float | None, own_pace: float | None
+) -> RaceLuckResult:
     stops = [_scored(d) for d in sorted(drafts, key=lambda d: d.in_lap)]
     totals = [s.total for s in stops if s.total is not None]
     executions = [s.execution for s in stops if s.execution is not None]
@@ -494,4 +558,5 @@ def _result(driver_number: int, drafts: list[_Draft], baseline: float | None) ->
         no_stops=not stops,
         insufficient_baseline_data=baseline is None,
         stops=stops,
+        own_pace=own_pace,
     )
