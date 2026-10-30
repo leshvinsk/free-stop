@@ -15,7 +15,7 @@ export interface StopDetail {
   pit_duration: number
   /** Race state while the car was in the pit lane. */
   status: FlagStatus
-  /** Seconds lost to the field over the in-lap and out-lap. */
+  /** Seconds lost to the field over the in-lap and out-lap, allowing for the car's usual pace. */
   time_loss: number | null
   /** Timing luck of the stop itself. */
   luck: number | null
