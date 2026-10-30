@@ -88,6 +88,21 @@ Each pit stop is classified by the race condition in force when the driver left 
 | VSC | Virtual safety car deployed | Reduced, but less than under a safety car |
 | RED | Race suspended | Tyre change is effectively free |
 
+### Measuring a Stop's Cost
+
+A stop is measured on track rather than by the pit lane clock, because the pit lane takes just as long under a safety car; the saving comes from rivals being slowed at the same time. The driver's in-lap and out-lap are compared with the median lap of the other cars that started a lap closest in time under the same race conditions:
+
+```text
+time_lost = (in_lap + out_lap) - field_pace_over_the_same_two_laps
+            - 2/3 x usual_gap_to_the_field x green_share_of_the_two_laps
+```
+
+A slow car's laps are slower anyway, and a fast car's quicker, so without the last term slow cars would look unlucky and fast cars lucky. A driver's usual gap to the field is the median difference between their clean green flag laps and the other cars' laps on the same lap number, which share the same fuel load and track conditions. It applies only to the share of the two laps run under green flags, because behind a safety car every car laps at the same speed.
+
+Only about two-thirds of a car's usual gap shows on its pit laps, because part of those laps is the speed-limited pit lane and the out-lap on cold tyres. The two-thirds is calibrated on every 2024 to 2026 race so that normal green flag stops, which contain no luck, average the same score whatever the speed of the car. Running `python scripts/check_pace_bias.py` from `backend/` repeats that check: it prints each team's average green flag stop score against its pace, and the correlation between the two, which should be close to zero.
+
+Time spent in the pit lane beyond the race's normal pit lane time is credited to the crew, not to luck, as described under [Crew Execution](#crew-execution).
+
 ### Baseline
 
 The baseline for a race is the trimmed mean time lost by all green flag stops in that race. The fastest and slowest 10 percent of stops are removed so that penalties, damage and unusual stops do not distort the result. At least three green flag stops are required for a baseline to be calculated.
@@ -110,7 +125,7 @@ Subtracting the field average ensures that only relative advantage is measured. 
 
 ### Accuracy
 
-The inputs are official timing data, accurate to the millisecond, but the cost of each stop is an estimate. It compares a driver's in-lap and out-lap with the pace of the rest of the field at that moment, so traffic, tyre condition and fuel load can move it by fractions of a second. There is no official measure of pit stop luck to validate against, so the scores are the best estimate the timing data allows.
+The inputs are official timing data, accurate to the millisecond, but the cost of each stop is an estimate. It compares a driver's in-lap and out-lap with the pace of the rest of the field at that moment, allowing for the speed of the driver's car, so traffic, tyre condition and fuel load can still move it by fractions of a second. The allowance for car speed is calibrated rather than exact: after it, each team's normal green flag stops mostly average within about a second of zero, with the largest gaps for new teams with few stops. There is no official measure of pit stop luck to validate against, so the scores are the best estimate the timing data allows.
 
 Large differences, such as a stop under a safety car against a stop in normal racing, are worth ten seconds or more and are measured reliably. Drivers a few tenths of a second per race apart should be read as level. Early in a season a single safety car can move a driver's average by a couple of seconds, which is why the luckiest and unluckiest drivers must have been scored in at least a third of the rounds, and at least three.
 
@@ -197,7 +212,8 @@ free-stop/
 │   │   ├── headshots.py             # Season accurate driver portraits
 │   │   └── teams.py                 # Team lineages and identifiers
 │   ├── scripts/
-│   │   └── scrape_teams.py          # formula1.com team data scraper
+│   │   ├── scrape_teams.py          # formula1.com team data scraper
+│   │   └── check_pace_bias.py       # Checks that car speed does not influence luck scores
 │   └── tests/
 ├── frontend/
 │   ├── src/

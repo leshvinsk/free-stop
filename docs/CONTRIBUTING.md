@@ -287,6 +287,7 @@ Changes to the scoring formula, the baseline calculation or the classification o
 - A clear explanation of the change and the reason it improves accuracy
 - New or updated tests in `backend/tests/test_formula.py` or `backend/tests/test_neutralised.py`
 - A list of the races or seasons whose results change as a consequence
+- The output of `python scripts/check_pace_bias.py`, run from `backend/`, showing that car speed still does not predict luck. The check fails if the correlation goes beyond ±0.3
 - An update to the methodology page where the explanation is affected
 - A `!` in the title, as in `fix(scoring)!: ...`, when published figures change, so that the release is a major version
 

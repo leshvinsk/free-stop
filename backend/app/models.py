@@ -22,7 +22,7 @@ class StopDetail(BaseModel):
     lap: int  # in-lap
     pit_duration: float  # pit-lane time
     status: FlagStatus  # race state while in the pit lane
-    time_loss: float | None  # seconds lost to the field over in-lap + out-lap
+    time_loss: float | None  # seconds lost to the field over in-lap + out-lap, car pace allowed for
     luck: float | None  # timing luck of the stop itself
     execution: float | None  # pit-lane time vs normal; + quicker than usual
     penalty: float  # seconds of penalty served at this stop

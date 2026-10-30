@@ -8,7 +8,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from app.openf1.schemas import Lap, PitStop, RaceControlMessage
-from app.scoring.formula import RaceAnalysis, analyse_race, compute_baseline
+from app.scoring.formula import OWN_PACE_WEIGHT, RaceAnalysis, analyse_race, compute_baseline
 from app.scoring.neutralised import FlagStatus, build_timeline, classify_laps
 
 T0 = datetime(2026, 3, 1, 14, 0, tzinfo=UTC)
@@ -274,3 +274,49 @@ class TestComputeBaseline:
 
     def test_needs_three_stops(self) -> None:
         assert compute_baseline([22.0, 23.0]) is None
+
+
+class TestOwnPace:
+    def test_a_slow_car_is_not_charged_for_being_slow(self) -> None:
+        # Driver 4 laps a second slower than everyone else all race, then makes a normal stop
+        slow = {lap: LAP + 1 for lap in range(1, LAPS + 1)}
+        table = _durations(
+            **{f"d{d}": {4 + d: LAP + GREEN_IN, 5 + d: LAP + GREEN_OUT} for d in range(1, 4)},
+            d4=slow | {8: LAP + 1 + GREEN_IN, 9: LAP + 1 + GREEN_OUT},
+        )
+        laps = _laps(table)
+        stops = [_stop(laps, d, 4 + d) for d in range(1, 5)]
+        analysis = _analyse(laps, stops)
+        result = next(r for r in analysis.results if r.driver_number == 4)
+        assert result.own_pace == pytest.approx(1.0)
+        # Its pit laps are 2s slower than the field's only because the car is; that much
+        # counts as pace rather than stop cost, scaled to how much of it shows on pit laps
+        assert result.stops[0].time_loss == pytest.approx(
+            GREEN_IN + GREEN_OUT + 2 - 2 * OWN_PACE_WEIGHT
+        )
+
+    def test_the_pace_correction_skips_laps_behind_the_safety_car(self) -> None:
+        # Behind the safety car every car laps at the same speed, slow car or not
+        laps, stops, messages = _sc_race()
+        for lap in laps:
+            if lap.driver_number == 5 and lap.lap_number not in (12, 13, 14):
+                lap.lap_duration = LAP + 1
+        analysis = _analyse(_laps(_table_of(laps)), stops, messages)
+        result = next(r for r in analysis.results if r.driver_number == 5)
+        assert result.own_pace == pytest.approx(1.0)
+        # Only the few seconds of the in-lap before the safety car came out are corrected;
+        # correcting both laps in full would take 2 x OWN_PACE_WEIGHT seconds off
+        assert result.stops[0].time_loss == pytest.approx(8.0, abs=0.05)
+
+    def test_equal_cars_have_no_pace_gap(self) -> None:
+        laps, stops = _green_race()
+        assert all(r.own_pace == pytest.approx(0.0) for r in _analyse(laps, stops).results)
+
+
+def _table_of(laps: list[Lap]) -> dict[int, list[float]]:
+    """Lap durations back into a table, so start times are rebuilt from them."""
+    table: dict[int, list[float]] = {}
+    for lap in sorted(laps, key=lambda lp: (lp.driver_number, lp.lap_number)):
+        assert lap.lap_duration is not None
+        table.setdefault(lap.driver_number, []).append(lap.lap_duration)
+    return table
