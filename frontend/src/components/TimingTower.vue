@@ -95,7 +95,12 @@ function barStyle(luck: number): Record<string, string> {
           :is="row.to ? RouterLink : 'div'"
           :to="row.to"
           class="row"
-          :class="{ 'row--plain': !numbered, 'row--link': row.to, 'row--highlight': row.highlight }"
+          :class="{
+            'row--plain': !numbered,
+            'row--link': row.to,
+            'row--highlight': row.highlight,
+            'row--muted': row.muted,
+          }"
         >
           <span
             v-if="numbered"
@@ -335,6 +340,15 @@ li:last-child .row {
 .row--highlight {
   background: color-mix(in srgb, var(--f1-red) 10%, transparent);
   box-shadow: inset 3px 0 0 var(--f1-red);
+}
+
+.row--muted {
+  opacity: 0.5;
+}
+
+.row--muted:hover,
+.row--muted:focus-within {
+  opacity: 1;
 }
 
 /* Car number: italic, team-coloured, rolls up into place like a pit board */

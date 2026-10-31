@@ -27,10 +27,9 @@ const drivers = computed(() => season.data.value?.drivers ?? [])
 const progress = computed(() => season.data.value?.progress)
 const hasStandings = computed(() => drivers.value.length > 0)
 // Headline cards only go to drivers with enough races, so a one-off stand-in can't top them
-const regulars = computed(() => {
-  const needed = season.data.value?.min_races ?? 1
-  return drivers.value.filter((d) => d.races_scored >= needed)
-})
+const needed = computed(() => season.data.value?.min_races ?? 1)
+const regulars = computed(() => drivers.value.filter((d) => d.races_scored >= needed.value))
+const anyBelow = computed(() => regulars.value.length < drivers.value.length)
 const luckiest = computed(() => regulars.value[0])
 const unluckiest = computed(() => (regulars.value.length > 1 ? regulars.value.at(-1) : undefined))
 
@@ -40,7 +39,11 @@ const rows = computed<TowerRow[]>(() =>
     code: d.name_acronym,
     title: formatFullName(d.full_name),
     subtitle: d.team_name,
-    tag: `${d.races_scored} race${d.races_scored === 1 ? '' : 's'}`,
+    tag:
+      d.races_scored < needed.value
+        ? `${d.races_scored} of ${needed.value} races`
+        : `${d.races_scored} race${d.races_scored === 1 ? '' : 's'}`,
+    muted: d.races_scored < needed.value,
     colour: teamColour(d.team_colour),
     team: d.team_name,
     teamTo: { name: 'team', params: { teamKey: d.team_key }, query: { year: props.year } },
@@ -109,6 +112,13 @@ function selectYear(year: number): void {
 
         <section class="section rise" style="--i: 3">
           <h2 class="section__title">Luck standings</h2>
+          <p class="section__lede">
+            Luckiest and unluckiest need at least {{ needed }} scored
+            {{ needed === 1 ? 'race' : 'races' }} this season, so a stand-in with a couple of lucky
+            races can't top them.
+            <template v-if="anyBelow">Drivers with fewer are dimmed below.</template>{{ ' '
+            }}<RouterLink :to="{ name: 'methodology' }" class="lede-link">How it works</RouterLink>
+          </p>
           <ScoringProgress v-if="progress && !progress.complete" :progress="progress" />
           <TimingTower :rows="rows" tag-label="Races" value-label="Saved per race" />
         </section>
@@ -139,5 +149,11 @@ function selectYear(year: number): void {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
   gap: 1rem;
+}
+
+.lede-link {
+  color: var(--text);
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 </style>

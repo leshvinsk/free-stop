@@ -470,14 +470,6 @@ const crewRows = computed<TowerRow[]>(() => {
   background: var(--lucky);
 }
 
-.section__lede {
-  max-width: 640px;
-  margin: -0.5rem 0 1rem;
-  font-size: 0.9rem;
-  line-height: 1.6;
-  color: var(--text-muted);
-}
-
 :deep(.flag-yellow) {
   color: var(--yellow);
 }

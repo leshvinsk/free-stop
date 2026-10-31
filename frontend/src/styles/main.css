@@ -105,6 +105,15 @@ button {
   color: var(--text-muted);
 }
 
+/* An intro line directly under a section title */
+.section__lede {
+  max-width: 640px;
+  margin: -0.5rem 0 1rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--text-muted);
+}
+
 .section__title::before {
   content: '';
   width: 18px;

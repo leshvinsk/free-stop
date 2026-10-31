@@ -25,5 +25,7 @@ export interface TowerRow {
   note?: string
   /** Shown in the lucky/unlucky column instead of a bar, e.g. "N/A". */
   barNote?: string
+  /** Dimmed, e.g. a driver with too few races to be named luckiest or unluckiest. */
+  muted?: boolean
   to?: RouteLocationRaw
 }
