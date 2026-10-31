@@ -255,4 +255,20 @@ function action(story: Story): string {
   color: var(--text-muted);
   white-space: pre-line;
 }
+
+/* Phones: the headline wraps instead of being cut off, with the value kept at the top right */
+@media (max-width: 560px) {
+  .moment__head {
+    align-items: flex-start;
+  }
+
+  .moment__text {
+    white-space: normal;
+    line-height: 1.35;
+  }
+
+  .moment__body {
+    padding: 0.65rem 0.7rem;
+  }
+}
 </style>

@@ -175,8 +175,6 @@ const crewRows = computed<TowerRow[]>(() => {
               <span>{{ formatDate(race.date) }}</span>
               <span v-if="race.total_laps">{{ race.total_laps }} laps</span>
             </p>
-
-            <RaceHighlights :stories="stories" :year="year" />
           </div>
 
           <aside class="trackside card rise" style="--i: 1">
@@ -188,6 +186,8 @@ const crewRows = computed<TowerRow[]>(() => {
             <div class="trackside__divider" />
             <RaceWeather v-if="weather.data.value" :weather="weather.data.value" />
           </aside>
+
+          <RaceHighlights class="hero__highlights" :stories="stories" :year="year" />
         </section>
 
         <section class="section tiles">
@@ -297,23 +297,34 @@ const crewRows = computed<TowerRow[]>(() => {
   opacity: 0;
 }
 
-/* Both columns share a height: title + highlights on the left, map + weather on the right */
+/* Title and highlights on the left, map and weather beside them on the right. On narrow
+   screens the map and weather come straight after the title, then the highlights. */
 .hero {
   display: grid;
-  gap: 1.5rem;
+  gap: 0 1.5rem;
   align-items: stretch;
 }
 
 .hero__title {
+  grid-area: title;
   display: flex;
   flex-direction: column;
 }
 
 .hero--split {
   grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    'title trackside'
+    'highlights trackside';
+}
+
+.hero .hero__highlights {
+  grid-area: highlights;
 }
 
 .trackside {
+  grid-area: trackside;
   display: flex;
   flex-direction: column;
   gap: 0.9rem;
@@ -365,6 +376,15 @@ const crewRows = computed<TowerRow[]>(() => {
 @media (max-width: 900px) {
   .hero--split {
     grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+    grid-template-areas:
+      'title'
+      'trackside'
+      'highlights';
+  }
+
+  .trackside {
+    margin-top: 1.5rem;
   }
 }
 

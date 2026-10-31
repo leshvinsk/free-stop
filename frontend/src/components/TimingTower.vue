@@ -132,7 +132,9 @@ function barStyle(luck: number): Record<string, string> {
             <span v-else class="badge__stripe" />
           </span>
           <span class="who">
-            <span v-if="row.code" class="code">{{ row.code }}</span>
+            <span v-if="row.code" class="code" :class="{ 'code--driver': row.country }">{{
+              row.code
+            }}</span>
             <span
               v-if="row.number !== undefined"
               class="number num"
@@ -586,8 +588,8 @@ li:last-child .row {
   }
 }
 
-/* Narrow screens: same content at the same size; the luck bar drops to a second line
-   under the driver instead of being hidden */
+/* Narrow screens: one line per row with only the name and the value. The tag column and
+   the luck bar are left to wider screens. */
 @media (max-width: 720px) {
   .tower__head,
   .row {
@@ -603,85 +605,97 @@ li:last-child .row {
     grid-template-columns: 40px minmax(0, 1fr) auto;
   }
 
-  .tower__head .col-bar,
+  .col-bar,
   .col-tag {
     display: none;
   }
 
   .row {
     grid-template-columns: 2.5rem 40px minmax(0, 1fr) auto;
-    grid-template-areas:
-      'pos logo who value'
-      'pos logo bar bar';
     padding-block: 0.6rem;
   }
 
   .row--plain {
     grid-template-columns: 40px minmax(0, 1fr) auto;
-    grid-template-areas:
-      'logo who value'
-      'logo bar bar';
-  }
-
-  .pos {
-    grid-area: pos;
-  }
-
-  .badge {
-    grid-area: logo;
   }
 
   .who {
-    grid-area: who;
     gap: 0.6rem;
-  }
-
-  .bar {
-    grid-area: bar;
-    height: 8px;
-  }
-
-  .value {
-    grid-area: value;
   }
 }
 
-/* Phones: the value joins the bar line so the driver row has the full width */
-@media (max-width: 440px) {
+/* Phones: smaller logo and position, and no car number or driver code, so the full name fits */
+@media (max-width: 560px) {
   .tower__head,
   .row {
-    gap: 0.4rem 0.5rem;
-    padding-inline: 0.6rem;
-  }
-
-  .row {
-    grid-template-columns: 2.1rem 40px minmax(0, 1fr) auto;
-    grid-template-areas:
-      'pos logo who who'
-      'pos logo bar value';
-  }
-
-  .row--plain {
-    grid-template-columns: 40px minmax(0, 1fr) auto;
-    grid-template-areas:
-      'logo who who'
-      'logo bar value';
+    gap: 0.35rem 0.6rem;
+    padding-inline: 0.7rem;
   }
 
   .tower__head {
-    grid-template-columns: 2.1rem 40px minmax(0, 1fr) auto;
+    grid-template-columns: 1.9rem 30px minmax(0, 1fr) auto;
+  }
+
+  .tower__head--plain {
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+  }
+
+  .row {
+    min-height: 58px;
+    padding-block: 0.55rem;
+    grid-template-columns: 1.9rem 30px minmax(0, 1fr) auto;
+  }
+
+  .row--plain {
+    grid-template-columns: 30px minmax(0, 1fr) auto;
+  }
+
+  .pos {
+    width: 1.75rem;
+    height: 1.75rem;
+    font-size: 0.92rem;
+  }
+
+  .badge {
+    width: 30px;
+    height: 30px;
+  }
+
+  .badge__logo {
+    width: 30px;
+    height: 30px;
   }
 
   .who {
     gap: 0.5rem;
   }
 
-  .code {
-    min-width: 0;
+  .number,
+  .code--driver {
+    display: none;
   }
 
-  .number {
+  .code {
     min-width: 2.4rem;
+    font-size: 0.92rem;
+  }
+
+  .flag {
+    width: 24px;
+    height: 16px;
+    border-radius: 2px;
+  }
+
+  .names {
+    gap: 0.1rem;
+  }
+
+  .title {
+    font-size: 0.95rem;
+  }
+
+  .subtitle {
+    font-size: 0.76rem;
   }
 
   .value {
