@@ -29,6 +29,9 @@ VERSION_TAG = re.compile(r"v(\d+)\.(\d+)\.(\d+)")
 CONVENTIONAL = re.compile(
     r"^(?P<type>[a-z]+)(?:\((?P<scope>[^)]*)\))?(?P<breaking>!)?: (?P<summary>.+)$"
 )
+# GitHub cuts pull request titles over 72 characters with "…", which can leave half an issue
+# reference such as "(#…" in front of the pull request number
+CUT_OFF_REFERENCE = re.compile(r"\s*\((?:#\d*)?…(?=\s*\(#\d+\)$)")
 SECTIONS = [
     ("Features", {"feat"}),
     ("Fixes", {"fix"}),
@@ -42,7 +45,8 @@ Version = tuple[int, int, int]
 
 
 def git(*args: str) -> str:
-    return subprocess.run(["git", *args], check=True, capture_output=True, text=True).stdout.strip()
+    result = subprocess.run(["git", *args], check=True, capture_output=True, encoding="utf-8")
+    return result.stdout.strip()
 
 
 def is_ancestor(older: str, newer: str) -> bool:
@@ -101,6 +105,7 @@ def notes(day: dt.date, previous: str, tag: str, changes: list[tuple[str, str]],
     grouped: dict[str, list[str]] = {title: [] for title, _ in SECTIONS}
     other: list[str] = []
     for subject, _ in changes:
+        subject = CUT_OFF_REFERENCE.sub("", subject)
         m = CONVENTIONAL.match(subject)
         if m is None:
             other.append(f"- {subject}")
