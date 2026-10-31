@@ -38,7 +38,16 @@
   -webkit-font-smoothing: antialiased;
 }
 
+/* Nothing may widen the page sideways, including the page-change slide and skew, or phones
+   let the whole page be swiped left onto empty space. clip, unlike hidden, keeps sticky working. */
+html,
+body,
+#app {
+  overflow-x: clip;
+}
+
 html {
+  overscroll-behavior-x: none;
   scroll-behavior: smooth;
   scrollbar-width: none; /* Firefox */
   -ms-overflow-style: none; /* IE/Edge */
