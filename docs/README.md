@@ -67,7 +67,7 @@ Pit crew performance is measured separately from timing. The speed of the stop i
 
 - Full season ranking of all drivers
 - Ranking by average time saved per race
-- Luckiest and unluckiest drivers named from those scored in at least a third of the rounds, and at least three
+- Luckiest and unluckiest drivers named from those scored in at least a third of the rounds, and at least three, with the rule explained above the standings and drivers below it dimmed
 
 ### Methodology Guide
 
