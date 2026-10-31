@@ -37,6 +37,7 @@ logger = logging.getLogger(__name__)
 RECENT_TTL = 300  # seconds before an unsettled session is re-scored
 SESSIONS_TTL = 900  # seconds the season calendar is cached
 FAILURE_COOLDOWN = 300  # seconds before a failed session is retried
+INCOMPLETE_RETRY = 3600  # seconds before a race scored without lap timing is re-scored
 SETTLE_DELAY = timedelta(hours=3)  # OpenF1 data is final this long after a race ends
 
 # Finished races' maps, weather and photos, and finished seasons' calendars, are kept in Redis
@@ -68,6 +69,13 @@ _sessions_adapter = TypeAdapter(list[Session])
 def is_settled(session: Session) -> bool:
     end = session.date_end or session.date_start + timedelta(hours=3)
     return datetime.now(UTC) - end > SETTLE_DELAY
+
+
+def has_lap_timing(result: SessionScore) -> bool:
+    """False when a race has pit stops but not one could be timed, meaning OpenF1 sent no laps
+    for it. That result is never kept as final, so the race is scored again once laps arrive."""
+    stops = [stop for r in result.results for stop in r.stops]
+    return not stops or any(stop.time_loss is not None for stop in stops)
 
 
 def _season_over(year: int) -> bool:
@@ -203,7 +211,10 @@ class ScoreStore:
         entry = self._scores.get(session.session_key)
         if entry is None:
             return False
-        return is_settled(session) or time.monotonic() - entry[0] < RECENT_TTL
+        age = time.monotonic() - entry[0]
+        if not has_lap_timing(entry[1]):
+            return age < INCOMPLETE_RETRY
+        return is_settled(session) or age < RECENT_TTL
 
     def _recently_failed(self, session: Session) -> bool:
         failed_at = self._failed_at.get(session.session_key)
@@ -214,7 +225,12 @@ class ScoreStore:
         entry = self._scores.get(key)
         if entry and self._is_fresh(session):
             return entry[1]
-        if entry is None and is_settled(session) and (saved := score_cache.load(key)):
+        if (
+            entry is None
+            and is_settled(session)
+            and (saved := score_cache.load(key))
+            and has_lap_timing(saved)
+        ):
             self._keep(session, saved)
             return saved
         task = self._inflight.get(key)
@@ -239,8 +255,10 @@ class ScoreStore:
         try:
             result = await score_session(self._http, session, persist=is_settled(session))
             self._keep(session, result)
-            if is_settled(session):
+            if is_settled(session) and has_lap_timing(result):
                 score_cache.save(result)
+            elif is_settled(session):
+                logger.warning("No lap timing for session %d yet, will retry", key)
             self._failed_at.pop(key, None)
             return result
         except Exception:
