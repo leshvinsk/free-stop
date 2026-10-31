@@ -3,7 +3,6 @@ import logging
 import os
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from datetime import UTC, datetime
 
 import httpx
 from fastapi import FastAPI, Request
@@ -24,10 +23,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     http = httpx.AsyncClient(timeout=30.0, follow_redirects=True)
     store = ScoreStore(http)
     app.state.store = store
-    # Start scoring the current season immediately so the first visitor isn't the one waiting
-    warmup = asyncio.create_task(store.warm_year(datetime.now(UTC).year))
+    # Warm scores and race-page extras for every covered season in the background
+    asyncio.create_task(store.warm_all())
     yield
-    warmup.cancel()
     await store.aclose()
     await http.aclose()
 
