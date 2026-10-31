@@ -413,12 +413,12 @@ const rows = computed<TowerRow[]>(() =>
 .hero__portrait {
   position: absolute;
   right: clamp(0rem, 6vw, 4rem);
-  bottom: 0;
+  top: 0;
   z-index: -1;
   height: 115%;
   max-width: 45%;
   object-fit: contain;
-  object-position: right bottom;
+  object-position: right top;
   mask-image: linear-gradient(to top, transparent 0%, #000 30%);
   pointer-events: none;
 }
