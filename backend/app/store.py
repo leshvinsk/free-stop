@@ -273,9 +273,28 @@ class ScoreStore:
 
     async def warm_year(self, year: int) -> None:
         try:
-            self.ensure_warming(year, await self.sessions(year))
+            all_sessions = await self.sessions(year)
+            self.ensure_warming(year, all_sessions)
+            self._track(asyncio.create_task(self._warm_extras(all_sessions)))
         except Exception:
             logger.exception("Could not start warming %d", year)
+
+    async def _warm_extras(self, sessions: list[Session]) -> None:
+        """Pre-load circuit map, weather and photos for every settled race."""
+        for session in sessions:
+            if not is_settled(session):
+                continue
+            for fetch in (self.circuit, self.weather, self.photos):
+                try:
+                    await fetch(session)
+                except Exception:
+                    logger.exception("Failed to warm extras for session %d", session.session_key)
+
+    async def warm_all(self) -> None:
+        """Warm scores and extras for every season the site covers."""
+        current_year = datetime.now(UTC).year
+        for year in range(FIRST_SEASON, current_year + 1):
+            await self.warm_year(year)
 
     # ── race page extras (circuit map, weather) ─────────────────────────────
 

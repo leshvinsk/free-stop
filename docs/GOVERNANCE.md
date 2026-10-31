@@ -141,7 +141,7 @@ Create an **HTTP(s)** monitor for `https://free-stop-api.onrender.com/health` wi
 
 1. Run **Actions, Sync team data, Run workflow** and confirm the data pull request opens and merges itself.
 2. Run **Actions, Daily release, Run workflow** with **dry run** ticked and check the release notes.
-3. Open every season and race once, so the cache is filled before visitors arrive. The first pass takes about 20 minutes because of OpenF1's rate limit.
+3. The API warms every season and race automatically in the background on startup. No manual cache pass is needed.
 
 ## Changes to This Document
 
