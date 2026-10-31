@@ -8,8 +8,10 @@ import pytest
 
 from app import score_cache
 from app.openf1.schemas import Session
+from app.scoring.formula import RaceLuckResult, ScoredStop
+from app.scoring.neutralised import FlagStatus
 from app.scoring.pipeline import SessionScore
-from app.store import SESSIONS_TTL, ScoreStore
+from app.store import SESSIONS_TTL, ScoreStore, has_lap_timing
 
 
 def _session(key: int = 1, days_ago: int = 30) -> Session:
@@ -104,3 +106,51 @@ def test_a_finished_seasons_calendar_is_never_refreshed() -> None:
             assert year not in store._calendar_refresh
 
     asyncio.run(run())
+
+
+def _stop(time_loss: float | None) -> ScoredStop:
+    return ScoredStop(
+        lap_number=20,
+        pit_duration=22.0,
+        status=FlagStatus.GREEN,
+        time_loss=time_loss,
+        luck=None,
+        execution=None,
+        penalty=0.0,
+    )
+
+
+def _score_with_stops(session: Session, time_loss: float | None) -> SessionScore:
+    result = RaceLuckResult(
+        driver_number=44,
+        race_luck=None,
+        race_execution=None,
+        no_stops=False,
+        insufficient_baseline_data=True,
+        stops=[_stop(time_loss)],
+    )
+    return SessionScore(session, [], [result], None, False, 2.4, lap_status={}, periods=[])
+
+
+def test_a_race_without_lap_timing_is_not_final() -> None:
+    session = _session()
+    assert has_lap_timing(_score(session))  # no stops at all is a real result
+    assert has_lap_timing(_score_with_stops(session, 21.0))
+    assert not has_lap_timing(_score_with_stops(session, None))
+
+
+def test_a_saved_score_without_lap_timing_is_scored_again() -> None:
+    session = _session()
+    score_cache.save(_score_with_stops(session, None))
+    requested: list[str] = []
+
+    async def run() -> None:
+        def record(request: httpx.Request) -> httpx.Response:
+            requested.append(request.url.path)
+            return httpx.Response(200, json=[])
+
+        async with httpx.AsyncClient(transport=httpx.MockTransport(record)) as http:
+            await ScoreStore(http).score(session)
+
+    asyncio.run(run())
+    assert any(path.endswith("/laps") for path in requested)
