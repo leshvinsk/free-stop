@@ -61,7 +61,7 @@ Significant decisions, such as changes to the scoring methodology, the addition 
 2. The release workflow opens a release pull request from `dev` to `main`, listing every included change, and enables auto-merge on it.
 3. Once the checks on `dev` pass, the release pull request merges itself with a merge commit. The maintainer may close or pause it at any time to hold a release.
 4. Merging into `main` deploys the change to production.
-5. At 00:05 Malaysia time (UTC+8), the daily release workflow publishes everything that reached `main` the previous day as one release and version tag on the [Releases](https://github.com/leshvinsk/free-stop/releases) page. Days without changes produce no release, and a missed run is caught up on the next one.
+5. At 00:47 Malaysia time (UTC+8), the daily release workflow publishes everything that reached `main` the previous day as one release and version tag on the [Releases](https://github.com/leshvinsk/free-stop/releases) page. Days without changes produce no release, and a missed run is caught up on the next one.
 
 Versions follow [Semantic Versioning](https://semver.org). A major version marks a change in the scoring methodology that alters published figures, a minor version adds functionality or seasons, and a patch version contains fixes and data corrections. The daily release reads the bump from the day's pull request titles: a `!` after the type is a major version, a `feat` is a minor version, and anything else is a patch. Reviewers must therefore make sure that a pull request which alters published figures carries a `!` before it is merged. The maintainer can override the bump, or release a single day, from the **Daily release** workflow's **Run workflow** button.
 
