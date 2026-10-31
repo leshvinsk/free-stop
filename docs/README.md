@@ -396,7 +396,7 @@ The Redis connection string is entered in the Render dashboard as `REDIS_URL` ra
 | CI | Every pull request into `dev`, and pushes to `dev` and `main` | Runs all backend and frontend checks |
 | PR policy | Every pull request into `dev`, except the data sync's | Verifies the target branch, branch name, title format, and that the branch is rebased on the latest `dev` |
 | Release to main | Every change to `dev` | Opens the release pull request from `dev` to `main` and merges it automatically once checks pass |
-| Daily release | Daily at 00:05 Malaysia time | Publishes the previous day's changes on `main` as a versioned GitHub release |
+| Daily release | Daily at 00:47 Malaysia time | Publishes the previous day's changes on `main` as a versioned GitHub release |
 | Link issue | Every pull request into `dev` | Fills in `Closes #<issue>` from the issue number in the branch name |
 | Close linked issues | Every change to `dev` | Closes the issues named by `Closes #<issue>` in each merged pull request |
 | Sync team data | Daily at 06:00 UTC, and hourly from Thursday to Sunday | Opens and merges a pull request when formula1.com team data changes and the frontend checks pass |
