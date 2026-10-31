@@ -102,7 +102,7 @@ const labels = [
 const limits = [
   [
     'Estimates, not stopwatches',
-    "A stop's cost compares the driver's in-lap and out-lap with the rest of the field's pace at that moment, allowing for how fast their car usually is. Only about two-thirds of that usual gap shows on pit laps, because the pit lane is speed-limited for everyone; the two-thirds is measured from every 2024-2026 race so that normal stops score the same whatever the car. Traffic, fresh tyres and fuel load still move a stop by fractions of a second, sometimes more. There is no official luck figure to check against, so the scores are the best estimate the timing data allows.",
+    "A stop's cost compares the driver's in-lap and out-lap with the rest of the field's pace at that moment, allowing for how fast their car usually is. Only about two-thirds of that usual gap shows on pit laps, because the pit lane is speed-limited for everyone; the two-thirds is measured from every race in the dataset so that normal stops score the same whatever the car. Traffic, fresh tyres and fuel load still move a stop by fractions of a second, sometimes more. There is no official luck figure to check against, so the scores are the best estimate the timing data allows.",
   ],
   [
     'Close gaps are ties',
